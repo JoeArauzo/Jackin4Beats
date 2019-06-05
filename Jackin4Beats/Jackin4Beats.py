@@ -11,6 +11,7 @@ import click
 from .myfunctions import initclogger
 from pathlib import Path
 from datetime import datetime
+from datetime import timedelta
 import sh
 import sys
 import re
@@ -76,23 +77,23 @@ def trim_audiosilence(file, verbose, test, end_offset, begin_offset, threshold):
     # Obtain audio segment from file
     try:
         sound = AudioSegment.from_file(audiofile)
-        duration_ms = len(sound)
     except IOError as e:
         logger.error(f"I/O error({e.errno}) - {e.strerror}: '{audiofile}'")
         sys.exit(5)
-    except:
-        logger.error(f"Invalid data found when processing '{audiofile.name}'" +
-                     ".  Please check the file is a valid audio file.")
-        sys.exit(6) 
+    # except:
+    #     logger.error(f"Invalid data found when processing '{audiofile.name}'" +
+    #                  ".  Please check the file is a valid audio file.")
+    #     sys.exit(6) 
 
     # Display info
+    duration_ms = len(sound)
+    d = timedelta(milliseconds=duration_ms)
     logger.info(f"File to trim               :  {audiofile.name}")
     logger.info(f"File type                  :  {audiofile_ext.upper()}")
     logger.info(f"Threshold (db)             :  {threshold}")
     logger.info(f"Beginning Offset (ms)      :  {begin_offset}")
     logger.info(f"Ending Offset (ms)         :  {end_offset}")
-    # logger.info(f"Duration (m:s.ms)          :  {}".format(convert_ms_to_timestring(duration_ms)))
-    print(duration_ms)
+    logger.info(f"Duration (h:m:s.ms)        :  {str(d)[:-3]}")
 
 
 def print_help_msg(command):
