@@ -1,0 +1,30 @@
+import re
+from setuptools import setup
+
+pkg_version = re.search(
+    '^__version__\s*=\s*"(.*)"',
+    open('Jackin4Beats/Jackin4Beats.py').read(),
+    re.M
+    ).group(1)
+
+
+with open("README.md", "rb") as f:
+    long_descr = f.read().decode("utf-8")
+
+    
+setup(
+        name='Jackin4Beats',
+        version=pkg_version,
+        description='Includes command-line tools for processing audio files.',
+        long_description=long_descr,
+        url='git@github.com:JoeArauzo/Jackin4Beats.git',
+        author='Joe Arauzo',
+        author_email='joe@arauzo.net',
+        license='GPLv3+',
+        packages=['Jackin4Beats'],
+        install_requires=['Click','sh'],
+        entry_points={
+            "console_scripts": ['trim-audiosilence = Jackin4Beats.Jackin4Beats:trim_audiosilence']
+            },
+        zip_safe=False
+)
