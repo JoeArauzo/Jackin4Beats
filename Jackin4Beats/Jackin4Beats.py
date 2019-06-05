@@ -16,6 +16,7 @@ import sys
 import re
 from .myfunctions import pathwoconflict
 import os
+from pydub import AudioSegment
 
 
 @click.command()
@@ -36,7 +37,7 @@ def trim_audiosilence(file, verbose, test, end_offset, begin_offset, threshold):
     """
     
     
-    # Initialize logging and begin
+    # Initialize logging
     if verbose:
         logger = initclogger(__name__, 'INFO')
     else:
@@ -51,14 +52,26 @@ def trim_audiosilence(file, verbose, test, end_offset, begin_offset, threshold):
     
     # Exit if kid3-cli is not accessible
     if not sh.which('kid3-cli'):
-        logger.error("The dependency, KID3-CLI, is not accessible.  Please" +
+        logger.error("The dependency, KID3-CLI, is not accessible.  Please " +
                      "install or check the PATH.")
         sys.exit(2)
+    
+    # Exit if ffmpeg is not accessible
+    if not sh.which('ffmpeg'):
+        logger.error("The dependency, FFMPEG, is not accessible.  Please " +
+                     "install or check the PATH.")
+        sys.exit(3)
 
-    #  
+    # Initialize variables
+    start_time = datetime.now()
+    audiofile_ext = audiofile.suffix.lower()[-3:]
+    supported_extensions = ('aiff', 'aif')
 
-
-    # 
+    # Check if file type is supported by this script
+    if not (audiofile_ext in supported_extensions):
+        logger.error(f"'{audiofile_ext.upper()}' is not a file type " +
+                     "supported by this tool.  'AIFF' is supported.")
+        sys.exit(4)
 
 
 
