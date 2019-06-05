@@ -73,6 +73,17 @@ def trim_audiosilence(file, verbose, test, end_offset, begin_offset, threshold):
                      "supported by this tool.  'AIFF' is supported.")
         sys.exit(4)
 
+    # Obtain audio segment from file
+    try:
+        sound = AudioSegment.from_file(audiofile)
+    except IOError as e:
+        logger.error(f"I/O error({e.errno}) - {e.strerror}: '{audiofile}'")
+        sys.exit(5)
+    except:
+        logger.error(f"Invalid data found when processing '{audiofile.name}'" +
+                     ".  Please check the file is a valid audio file.")
+        sys.exit(6) 
+
 
 
 
