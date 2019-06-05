@@ -93,7 +93,10 @@ def trim_audiosilence(file, verbose, test, end_offset, begin_offset, threshold):
     logger.info(f"Threshold (db)             :  {threshold}")
     logger.info(f"Beginning Offset (ms)      :  {begin_offset}")
     logger.info(f"Ending Offset (ms)         :  {end_offset}")
-    logger.info(f"Duration (h:m:s.ms)        :  {str(d)[:-3]}")
+    logger.info(f"Duration (h:m:s.ms)        :  \
+                {str(d)[:-3]}")
+
+
 
 
 def print_help_msg(command):
