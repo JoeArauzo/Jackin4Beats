@@ -53,9 +53,12 @@ def detect_leading_silence(sound, silence_threshold, chunk_size=1):
               help='ending offset (default: 0 ms)')
 @click.option('--test', is_flag=True,
               help='Perform test run without making changes')
-@click.option('--verbose', 'verbosity', flag_value='verbose', help='Verbose output')
-@click.option('--debug', 'verbosity', flag_value='debug', help='Debug output')
-def trim_audiosilence(file, verbosity, test, end_offset, begin_offset, threshold):
+@click.option('--verbose', 'verbosity', flag_value='verbose',
+              help='Verbose output')
+@click.option('--debug', 'verbosity', flag_value='debug',
+              help='Debug output')
+def trim_audiosilence(file, verbosity, test, end_offset, begin_offset,
+                      threshold):
     """
     This command-line tool removes leading and trailing silence from an AIFF
     audio file.
@@ -164,6 +167,12 @@ def trim_audiosilence(file, verbosity, test, end_offset, begin_offset, threshold
         if end_offset < 0:
             if (duration_ms - (end_trim + abs(end_offset))) > start_trim:
                 end_trim += abs(end_offset)
+
+    # Save trimmed audio segment
+    logger.info(f"Start trim w/ offset       :  {}" +
+                f"{str(timedelta(milliseconds=start_trim))[:-3]}") 
+    logger.info(f"End trim w/ offset         :  {}" +
+                f"{str(timedelta(milliseconds=end_trim))[:-3]}")
 
 
 def print_help_msg(command):
