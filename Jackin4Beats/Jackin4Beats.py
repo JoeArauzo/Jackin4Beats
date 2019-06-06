@@ -7,6 +7,7 @@
 __version__ = "0.1.0"
 
 
+import logging
 import click
 from .myfunctions import initclogger
 from pathlib import Path
@@ -18,6 +19,25 @@ import re
 from .myfunctions import pathwoconflict
 import os
 from pydub import AudioSegment
+
+
+def detect_leading_silence(sound, silence_threshold, chunk_size=1):
+    logger = logging.getLogger(__name__)
+    counter_ms = 0
+    sound_length = len(sound) - 1
+    while True:
+        level = sound[counter_ms:counter_ms+chunk_size].dBFS
+        logger.debug(f"Level: {level} at " +
+                     f"{str(timedelta(milliseconds=counter_ms))[:-3]}")
+        #print("Level: {} dB at {}".format(level, convert_ms_to_timestring(counter_ms)))
+        if level > silence_threshold or counter_ms == sound_length:
+            break
+        counter_ms += chunk_size
+
+    if counter_ms == sound_length:
+        counter_ms = 0
+    #print("Returning {} ms".format(convert_ms_to_timestring(counter_ms)))
+    return counter_ms
 
 
 @click.command()
@@ -87,16 +107,21 @@ def trim_audiosilence(file, verbose, test, end_offset, begin_offset, threshold):
 
     # Display info
     duration_ms = len(sound)
-    d = timedelta(milliseconds=duration_ms)
     logger.info(f"File to trim               :  {audiofile.name}")
     logger.info(f"File type                  :  {audiofile_ext.upper()}")
     logger.info(f"Threshold (db)             :  {threshold}")
     logger.info(f"Beginning Offset (ms)      :  {begin_offset}")
     logger.info(f"Ending Offset (ms)         :  {end_offset}")
-    logger.info(f"Duration (h:m:s.ms)        :  \
-                {str(d)[:-3]}")
+    logger.info("Duration (h:m:s.ms)        :  " +
+                f"{str(timedelta(milliseconds=duration_ms))[:-3]}")
 
-
+    # Detect silence from beginning and end of audio segment
+    start_trim = detect_leading_silence(sound, threshold, chunk_size=1)
+    end_trim = detect_leading_silence(sound.reverse(), threshold, chunk_size=1)
+    logger.info("Start trim                 :  " +
+                f"{str(timedelta(milliseconds=start_trim))[:-3]}")
+    logger.info("End trim                   :  " +
+                f"{str(timedelta(milliseconds=end_trim))[:-3]}")
 
 
 def print_help_msg(command):
