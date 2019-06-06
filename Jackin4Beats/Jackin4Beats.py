@@ -131,6 +131,40 @@ def trim_audiosilence(file, verbosity, test, end_offset, begin_offset, threshold
     logger.info("End trim                   :  " +
                 f"{str(timedelta(milliseconds=end_trim))[:-3]}")
 
+    # Adjust for user-specified offset from beginning of audio segment
+    # Proceed if silence detected at beginning of audio segment
+    if start_trim > 0:
+        # If negative offset specified
+        if begin_offset < 0:
+            # Apply offset if silence is long enough
+            if start_trim >= abs(begin_offset):
+                start_trim -= abs(begin_offset)
+        # If positive offset specified
+        if begin_offset > 0:
+            # Apply offset if audio segment is long enough
+            if begin_offset < (duration_ms - (start_trim + end_trim)):
+                # Proceed if silence detected at end of audio segment
+                if end_trim > 0:
+                    # If negative offset specified
+                    if end_offset < 0:
+                        if begin_offset < (duration_ms - (start_trim + end_trim + abs(end_offset))):
+                            start_trim += begin_offset
+                else:
+                    start_trim += begin_offset
+
+    # Adjust for user-specified offset from end of audio segment
+    # Proceed if silence detected
+    if end_trim > 0:
+        # If positive offset specified
+        if end_offset > 0:
+            # Apply offset if silence is long enough
+            if end_trim >= end_offset:
+                end_trim -= end_offset
+        # If negative offset specified
+        if end_offset < 0:
+            if (duration_ms - (end_trim + abs(end_offset))) > start_trim:
+                end_trim += abs(end_offset)
+
 
 def print_help_msg(command):
     with click.Context(command) as ctx:
