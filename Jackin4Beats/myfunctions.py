@@ -18,6 +18,8 @@ def initclogger(name, level):
     c_handler = logging.StreamHandler()
     if level == 'INFO':
         c_handler.setLevel(logging.INFO)
+    elif level == 'DEBUG':
+        c_handler.setLevel(logging.DEBUG)
     else:
         c_handler.setLevel(logging.ERROR)
 

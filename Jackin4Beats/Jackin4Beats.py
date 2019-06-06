@@ -25,18 +25,21 @@ def detect_leading_silence(sound, silence_threshold, chunk_size=1):
     logger = logging.getLogger(__name__)
     counter_ms = 0
     sound_length = len(sound) - 1
+    
     while True:
         level = sound[counter_ms:counter_ms+chunk_size].dBFS
         logger.debug(f"Level: {level} at " +
                      f"{str(timedelta(milliseconds=counter_ms))[:-3]}")
-        #print("Level: {} dB at {}".format(level, convert_ms_to_timestring(counter_ms)))
         if level > silence_threshold or counter_ms == sound_length:
             break
         counter_ms += chunk_size
 
     if counter_ms == sound_length:
         counter_ms = 0
+    
     #print("Returning {} ms".format(convert_ms_to_timestring(counter_ms)))
+    logger.debug("Found audio at " +
+                 f"{str(timedelta(milliseconds=counter_ms))[:-3]}")
     return counter_ms
 
 
@@ -50,8 +53,9 @@ def detect_leading_silence(sound, silence_threshold, chunk_size=1):
               help='ending offset (default: 0 ms)')
 @click.option('--test', is_flag=True,
               help='Perform test run without making changes')
-@click.option('--verbose', '-v', is_flag=True, help='Verbose output')
-def trim_audiosilence(file, verbose, test, end_offset, begin_offset, threshold):
+@click.option('--verbose', 'verbosity', flag_value='verbose', help='Verbose output')
+@click.option('--debug', 'verbosity', flag_value='debug', help='Debug output')
+def trim_audiosilence(file, verbosity, test, end_offset, begin_offset, threshold):
     """
     This command-line tool removes leading and trailing silence from an AIFF
     audio file.
@@ -59,8 +63,10 @@ def trim_audiosilence(file, verbose, test, end_offset, begin_offset, threshold):
     
     
     # Initialize logging
-    if verbose:
+    if verbosity == 'verbose':
         logger = initclogger(__name__, 'INFO')
+    elif verbosity == 'debug':
+        logger = initclogger(__name__, 'DEBUG')
     else:
         logger = initclogger(__name__, 'ERROR')
     logger.info(f"Executing TRIM-AUDIOSILENCE version {__version__}.")
@@ -116,7 +122,9 @@ def trim_audiosilence(file, verbose, test, end_offset, begin_offset, threshold):
                 f"{str(timedelta(milliseconds=duration_ms))[:-3]}")
 
     # Detect silence from beginning and end of audio segment
+    logger.debug('Detecting silence from beginning of audio file.')
     start_trim = detect_leading_silence(sound, threshold, chunk_size=1)
+    logger.debug('Detecting silence from end of audio file.')
     end_trim = detect_leading_silence(sound.reverse(), threshold, chunk_size=1)
     logger.info("Start trim                 :  " +
                 f"{str(timedelta(milliseconds=start_trim))[:-3]}")
