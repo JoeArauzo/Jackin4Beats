@@ -19,6 +19,7 @@ import re
 from .myfunctions import pathwoconflict
 import os
 from pydub import AudioSegment
+from send2trash import send2trash
 
 
 def detect_leading_silence(sound, silence_threshold, chunk_size=1):
@@ -96,6 +97,8 @@ def trim_audiosilence(file, verbosity, test, end_offset, begin_offset,
     start_time = datetime.now()
     audiofile_ext = audiofile.suffix.lower()[1:]
     supported_extensions = ('aiff', 'aif')
+    tmp_audiofile = f"{start_time:%Y%m%dT%H%M%S}" + audiofile.suffix
+    tmp_audiofile = audiofile.parent / tmp_audiofile
 
     # Check if file type is supported by this script
     if not (audiofile_ext in supported_extensions):
@@ -167,12 +170,50 @@ def trim_audiosilence(file, verbosity, test, end_offset, begin_offset,
         if end_offset < 0:
             if (duration_ms - (end_trim + abs(end_offset))) > start_trim:
                 end_trim += abs(end_offset)
+    
+    # Set trimmed audio segment
+    trimmed_sound = sound[start_trim:duration_ms-end_trim]
 
-    # Save trimmed audio segment
-    logger.info(f"Start trim w/ offset       :  {}" +
+    # Display addt'l info
+    logger.info(f"Start trim w/ offset       :  " +
                 f"{str(timedelta(milliseconds=start_trim))[:-3]}") 
-    logger.info(f"End trim w/ offset         :  {}" +
+    logger.info(f"End trim w/ offset         :  " +
                 f"{str(timedelta(milliseconds=end_trim))[:-3]}")
+    logger.info("New duration (h:m:s.ms)    :  " +
+                f"{str(timedelta(milliseconds=len(trimmed_sound)))[:-3]}")
+
+    # Save trimmed audio segment if not in test mode
+    if not test:
+        logger.debug("Attempting to export trimmed file as " +
+                     f"'{tmp_audiofile.name}'.")
+        try:
+            trimmed_sound.export(tmp_audiofile, format='aiff')
+            logger.debug("Export successful.")
+        except:
+            logger.error("Problem exporting temp file.")
+            sys.exit(6)
+        
+        try:
+            send2trash(str(audiofile))
+            logger.debug("Original file successfully sent to trash.")
+        except:
+            logger.error("Problem sending original file to trash.")
+            sys.exit(7)
+
+        try:
+            Path(tmp_audiofile).rename(audiofile)
+            logger.debug("Successfuly renamed temp file as original file.")
+        except:
+            logger.error("Problem renaming temp file as original file.")
+            sys.exit(8)
+
+        logger.info("File successfully trimmed.")
+    else:
+        logger.info("--test flag enabled.  Original file will remain intact.")
+    
+    logger.debug("Process completed in      :  " +
+                 f"{datetime.now() - start_time}")
+    click.echo("Done.")
 
 
 def print_help_msg(command):
