@@ -237,10 +237,10 @@ def trim_audiosilence(file, verbosity, test, end_offset, begin_offset,
                     logger.error("Unable to clear value of ENCODEDBY.")
                     sys.exit()
                 
-                # Backup ID3 tag info
-                logger.debug(f"Exporting ID3 tags to '{tmp_audiofile1}'.")
+                # Backup metadata
                 metadata_bak = "metadata.csv"
                 metadata_bak = tmp_audiofile1.parent / metadata_bak
+                logger.debug(f"Exporting metadata to '{metadata_bak}'.")
                 kid3_cmd = f"export '{metadata_bak}' 'CSV unquoted' 2"
                 try:
                     sh.kid3_cli("-c", kid3_cmd, tmp_audiofile1)
@@ -265,17 +265,33 @@ def trim_audiosilence(file, verbosity, test, end_offset, begin_offset,
                     logger.error("Unable to export image.")
                     sys.exit()
 
-                sys.exit()
-
-            logger.debug("Attempting to export trimmed file as " +
-                        f"'{tmp_audiofile2.name}'.")
+            # Save trimmed audio file
+            os.remove(tmp_audiofile1)
+            logger.debug("Attempting to save trimmed file as " +
+                        f"'{tmp_audiofile1}'.")
             try:
-                trimmed_sound.export(tmp_audiofile, format='aiff')
+                trimmed_sound.export(tmp_audiofile1, format='aiff')
                 logger.debug("Export successful.")
             except:
                 logger.error("Problem exporting temp file.")
                 sys.exit(6)
             
+            # Import metadata to trimmed audio file
+            if len(metadata.tags):
+                logger.debug(f"Importing metadata...")
+                kid3_cmd = f"import '{metadata_bak}' 'CSV unquoted' 2"
+                try:
+                    sh.kid3_cli("-c", kid3_cmd, "-c", "save", tmp_audiofile1)
+                except Exception as e:
+                    logger.debug(f"RAN: {e.full_cmd}")
+                    logger.debug(f"STDOUT: {e.stdout}")
+                    logger.debug(f"STDERR: {e.stderr}")
+                    logger.error("Unable to import metadata.")
+                    sys.exit()
+            
+            
+            sys.exit()
+
             try:
                 send2trash(str(audiofile))
                 logger.debug("Original file successfully sent to trash.")
