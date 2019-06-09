@@ -18,8 +18,11 @@ import sys
 import re
 from .myfunctions import pathwoconflict
 import os
+import shutil
 from pydub import AudioSegment
 from send2trash import send2trash
+import re
+import taglib
 
 
 def detect_leading_silence(sound, silence_threshold, chunk_size=1):
@@ -29,8 +32,8 @@ def detect_leading_silence(sound, silence_threshold, chunk_size=1):
     
     while True:
         level = sound[counter_ms:counter_ms+chunk_size].dBFS
-        logger.debug(f"Level: {level} at " +
-                     f"{str(timedelta(milliseconds=counter_ms))[:-3]}")
+        # logger.debug(f"Level: {level} at " +
+        #              f"{str(timedelta(milliseconds=counter_ms))[:-3]}")
         if level > silence_threshold or counter_ms == sound_length:
             break
         counter_ms += chunk_size
@@ -38,7 +41,6 @@ def detect_leading_silence(sound, silence_threshold, chunk_size=1):
     if counter_ms == sound_length:
         counter_ms = 0
     
-    #print("Returning {} ms".format(convert_ms_to_timestring(counter_ms)))
     logger.debug("Found audio at " +
                  f"{str(timedelta(milliseconds=counter_ms))[:-3]}")
     return counter_ms
@@ -78,7 +80,7 @@ def trim_audiosilence(file, verbosity, test, end_offset, begin_offset,
     # Exit if file does not exist
     audiofile = Path(file).resolve()
     if not audiofile.is_file():
-        logger.error(f"The file '{audiofile.name}' does not exist.")
+        logger.error(f"The file '{audiofile}' does not exist.")
         sys.exit(1)
     
     # Exit if kid3-cli is not accessible
@@ -95,10 +97,12 @@ def trim_audiosilence(file, verbosity, test, end_offset, begin_offset,
 
     # Initialize variables
     start_time = datetime.now()
+    tmp_name = f"{start_time:%Y%m%dT%H%M%S%f}"
     audiofile_ext = audiofile.suffix.lower()[1:]
     supported_extensions = ('aiff', 'aif')
-    tmp_audiofile = f"{start_time:%Y%m%dT%H%M%S}" + audiofile.suffix
-    tmp_audiofile = audiofile.parent / tmp_audiofile
+    tmp_audiofile1 = audiofile.parent / tmp_name / audiofile.name
+    tmp_audiofile2 = tmp_name + audiofile.suffix
+    tmp_audiofile2 = audiofile.parent / tmp_name / tmp_audiofile2
 
     # Check if file type is supported by this script
     if not (audiofile_ext in supported_extensions):
@@ -119,7 +123,7 @@ def trim_audiosilence(file, verbosity, test, end_offset, begin_offset,
 
     # Display info
     duration_ms = len(sound)
-    logger.info(f"File to trim               :  {audiofile.name}")
+    logger.info(f"File to trim               :  {audiofile}")
     logger.info(f"File type                  :  {audiofile_ext.upper()}")
     logger.info(f"Threshold (db)             :  {threshold}")
     logger.info(f"Beginning Offset (ms)      :  {begin_offset}")
@@ -179,37 +183,117 @@ def trim_audiosilence(file, verbosity, test, end_offset, begin_offset,
                 f"{str(timedelta(milliseconds=start_trim))[:-3]}") 
     logger.info(f"End trim w/ offset         :  " +
                 f"{str(timedelta(milliseconds=end_trim))[:-3]}")
-    logger.info("New duration (h:m:s.ms)    :  " +
+
+    # Proceed if audio silence detected
+    if len(trimmed_sound) != duration_ms:
+        logger.info("New duration (h:m:s.ms)    :  " +
                 f"{str(timedelta(milliseconds=len(trimmed_sound)))[:-3]}")
+        # Perform trim process if test flag not set
+        if not test:
+            logger.debug(f"Opening '{audiofile}' to inspect metadata.")
+            try:
+                metadata = taglib.File(str(audiofile))
+            except:
+                logger.error("Unable to inspect audio metadata.")
+                sys.exit()
+            # Backup ID3 tags if detected
+            if len(metadata.tags):
 
-    # Save trimmed audio segment if not in test mode
-    if not test:
-        logger.debug("Attempting to export trimmed file as " +
-                     f"'{tmp_audiofile.name}'.")
-        try:
-            trimmed_sound.export(tmp_audiofile, format='aiff')
-            logger.debug("Export successful.")
-        except:
-            logger.error("Problem exporting temp file.")
-            sys.exit(6)
-        
-        try:
-            send2trash(str(audiofile))
-            logger.debug("Original file successfully sent to trash.")
-        except:
-            logger.error("Problem sending original file to trash.")
-            sys.exit(7)
+                # Set ID3 TRACKNUMBER to 1 if value is null
+                if not len(metadata.tags["TRACKNUMBER"]):
+                    metadata.tags["TRACKNUMBER"] = ["1"]
+                    logger.debug("ID3 TRACK NUMBER missing.  Setting to '1'.")
+                    try:
+                        metadata.save()
+                    except:
+                        logger.error("Unable to save ID3 TRACK NUMBER.")
+                        sys.exit()
 
-        try:
-            Path(tmp_audiofile).rename(audiofile)
-            logger.debug("Successfuly renamed temp file as original file.")
-        except:
-            logger.error("Problem renaming temp file as original file.")
-            sys.exit(8)
+                # Copy file to temp working directory
+                logger.debug("Creating temp working directory at " +
+                             f"'{tmp_audiofile1.parent}'.")
+                try:
+                    tmp_audiofile1.parent.mkdir(parents=True)
+                except:
+                    logger.error("Unable to create temp working directory.")
+                    sys.exit()
+                logger.debug(f"Opening '{audiofile}' to inspect metadata.")
+                try:
+                    shutil.copy2(audiofile, tmp_audiofile1.parent)
+                except IOError as e:
+                    logger.error(f"Unable to copy file. {e}")
+                    sys.exit()
 
-        logger.info("File successfully trimmed.")
+                # Upgrade metadata to ID3v2.4
+                logger.debug("Upgrading metadata to ID3v2.4.")
+                kid3_cmd = "to24"
+                try:
+                    sh.kid3_cli("-c", kid3_cmd, "-c", "save", tmp_audiofile1)
+                except Exception as e:
+                    logger.debug(f"RAN: {e.full_cmd}")
+                    logger.debug(f"STDOUT: {e.stdout}")
+                    logger.debug(f"STDERR: {e.stderr}")
+                    logger.error("Unable to upgrade metadata to ID3v2.4.")
+                    sys.exit()
+                
+                # Clear value for encoded-by
+                logger.debug("Clearing value of 'encoded-by'.")
+                kid3_cmd = "set encoded-by '' 2"
+                try:
+                    sh.kid3_cli("-c", kid3_cmd, "-c", "save", tmp_audiofile1)
+                except Exception as e:
+                    logger.debug(f"RAN: {e.full_cmd}")
+                    logger.debug(f"STDOUT: {e.stdout}")
+                    logger.debug(f"STDERR: {e.stderr}")
+                    logger.error("Unable to clear value of 'encoded-by'.")
+                    sys.exit()
+                
+                # Backup ID3 tag info
+                logger.debug(f"Exporting ID3 tags to '{tmp_audiofile1}'.")
+                id3tags_bak = "id3tags.csv"
+                id3tags_bak = tmp_audiofile1.parent / id3tags_bak
+                kid3_cmd = f"export '{id3tags_bak}' 'CSV unquoted' 2"
+                try:
+                    sh.kid3_cli("-c", kid3_cmd, tmp_audiofile1)
+                except Exception as e:
+                    logger.debug(f"RAN: {e.full_cmd}")
+                    logger.debug(f"STDOUT: {e.stdout}")
+                    logger.debug(f"STDERR: {e.stderr}")
+                    logger.error("Unable to export tags.")
+                    sys.exit()
+
+                sys.exit()
+
+            logger.debug("Attempting to export trimmed file as " +
+                        f"'{tmp_audiofile2.name}'.")
+            try:
+                trimmed_sound.export(tmp_audiofile, format='aiff')
+                logger.debug("Export successful.")
+            except:
+                logger.error("Problem exporting temp file.")
+                sys.exit(6)
+            
+            try:
+                send2trash(str(audiofile))
+                logger.debug("Original file successfully sent to trash.")
+            except:
+                logger.error("Problem sending original file to trash.")
+                sys.exit(7)
+
+            try:
+                Path(tmp_audiofile).rename(audiofile)
+                logger.debug("Successfuly renamed temp file as original file.")
+            except:
+                logger.error("Problem renaming temp file as original file.")
+                sys.exit(8)
+
+            logger.info("File successfully trimmed.")
+        else:
+            logger.info("--test flag enabled.  Original file will remain " +
+                        "intact.")
+    
     else:
-        logger.info("--test flag enabled.  Original file will remain intact.")
+        logger.info("No audio silence detected.  Nothing to trim.")
     
     logger.debug("Process completed in      :  " +
                  f"{datetime.now() - start_time}")
