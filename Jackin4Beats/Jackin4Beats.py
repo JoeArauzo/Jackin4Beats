@@ -225,18 +225,6 @@ def trim_audiosilence(file, verbosity, test, end_offset, begin_offset,
                     logger.error(f"Unable to copy file. {e}")
                     sys.exit()
 
-                # Upgrade metadata to ID3v2.4
-                logger.debug("Upgrading metadata to ID3v2.4.")
-                kid3_cmd = "to24"
-                try:
-                    sh.kid3_cli("-c", kid3_cmd, "-c", "save", tmp_audiofile1)
-                except Exception as e:
-                    logger.debug(f"RAN: {e.full_cmd}")
-                    logger.debug(f"STDOUT: {e.stdout}")
-                    logger.debug(f"STDERR: {e.stderr}")
-                    logger.error("Unable to upgrade metadata to ID3v2.4.")
-                    sys.exit()
-                
                 # Clear value for encoded-by
                 logger.debug("Clearing value of ENCODEDBY.")
                 kid3_cmd = "set encoded-by '' 2"
