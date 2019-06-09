@@ -200,13 +200,14 @@ def trim_audiosilence(file, verbosity, test, end_offset, begin_offset,
             if len(metadata.tags):
 
                 # Set ID3 TRACKNUMBER to 1 if value is null
-                if not len(metadata.tags["TRACKNUMBER"]):
+                if ( (not 'TRACKNUMBER' in metadata.tags) or
+                        (not len(metadata.tags["TRACKNUMBER"])) ):
                     metadata.tags["TRACKNUMBER"] = ["1"]
-                    logger.debug("ID3 TRACK NUMBER missing.  Setting to '1'.")
+                    logger.debug("ID3 TRACKNUMBER missing.  Setting to '1'.")
                     try:
                         metadata.save()
                     except:
-                        logger.error("Unable to save ID3 TRACK NUMBER.")
+                        logger.error("Unable to set ID3 TRACKNUMBER.")
                         sys.exit()
 
                 # Copy file to temp working directory
@@ -237,7 +238,7 @@ def trim_audiosilence(file, verbosity, test, end_offset, begin_offset,
                     sys.exit()
                 
                 # Clear value for encoded-by
-                logger.debug("Clearing value of 'encoded-by'.")
+                logger.debug("Clearing value of ENCODEDBY.")
                 kid3_cmd = "set encoded-by '' 2"
                 try:
                     sh.kid3_cli("-c", kid3_cmd, "-c", "save", tmp_audiofile1)
@@ -245,14 +246,14 @@ def trim_audiosilence(file, verbosity, test, end_offset, begin_offset,
                     logger.debug(f"RAN: {e.full_cmd}")
                     logger.debug(f"STDOUT: {e.stdout}")
                     logger.debug(f"STDERR: {e.stderr}")
-                    logger.error("Unable to clear value of 'encoded-by'.")
+                    logger.error("Unable to clear value of ENCODEDBY.")
                     sys.exit()
                 
                 # Backup ID3 tag info
                 logger.debug(f"Exporting ID3 tags to '{tmp_audiofile1}'.")
-                id3tags_bak = "id3tags.csv"
-                id3tags_bak = tmp_audiofile1.parent / id3tags_bak
-                kid3_cmd = f"export '{id3tags_bak}' 'CSV unquoted' 2"
+                metadata_bak = "metadata.csv"
+                metadata_bak = tmp_audiofile1.parent / metadata_bak
+                kid3_cmd = f"export '{metadata_bak}' 'CSV unquoted' 2"
                 try:
                     sh.kid3_cli("-c", kid3_cmd, tmp_audiofile1)
                 except Exception as e:
@@ -260,6 +261,20 @@ def trim_audiosilence(file, verbosity, test, end_offset, begin_offset,
                     logger.debug(f"STDOUT: {e.stdout}")
                     logger.debug(f"STDERR: {e.stderr}")
                     logger.error("Unable to export tags.")
+                    sys.exit()
+                
+                # Export cover art
+                logger.debug(f"Exporting image.")
+                img_bak = "image.jpg"
+                img_bak = tmp_audiofile1.parent / img_bak
+                kid3_cmd = f"get picture:'{img_bak}'"
+                try:
+                    sh.kid3_cli("-c", kid3_cmd, tmp_audiofile1)
+                except Exception as e:
+                    logger.debug(f"RAN: {e.full_cmd}")
+                    logger.debug(f"STDOUT: {e.stdout}")
+                    logger.debug(f"STDERR: {e.stderr}")
+                    logger.error("Unable to export image.")
                     sys.exit()
 
                 sys.exit()
