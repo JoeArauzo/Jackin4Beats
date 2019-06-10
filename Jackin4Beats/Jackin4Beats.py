@@ -236,7 +236,7 @@ def trim_audiosilence(file, verbosity, test, end_offset, begin_offset,
                 kid3_cmd = "set encoded-by '' 2"
                 try:
                     sh.kid3_cli("-c", kid3_cmd, "-c", "save", tmp_audiofile1)
-                except ErrorReturnCode as e:
+                except Exception as e:
                     logger.debug(f"RAN: {e.full_cmd}")
                     logger.debug(f"STDOUT: {e.stdout}")
                     logger.debug(f"STDERR: {e.stderr}")
@@ -251,7 +251,7 @@ def trim_audiosilence(file, verbosity, test, end_offset, begin_offset,
                 kid3_cmd = f"export '{metadata_bak}' 'CSV unquoted' 2"
                 try:
                     sh.kid3_cli("-c", kid3_cmd, tmp_audiofile1)
-                except ErrorReturnCode as e:
+                except Exception as e:
                     logger.debug(f"RAN: {e.full_cmd}")
                     logger.debug(f"STDOUT: {e.stdout}")
                     logger.debug(f"STDERR: {e.stderr}")
@@ -261,12 +261,12 @@ def trim_audiosilence(file, verbosity, test, end_offset, begin_offset,
                 
                 # Export album artwork
                 logger.debug(f"Exporting album artwork...")
-                img_bak = "image.jpg"
+                img_bak = "artwork.jpg"
                 img_bak = tmp_audiofile1.parent / img_bak
                 kid3_cmd = f"get picture:'{img_bak}'"
                 try:
                     sh.kid3_cli("-c", kid3_cmd, tmp_audiofile1)
-                except ErrorReturnCode as e:
+                except Exception as e:
                     logger.debug(f"RAN: {e.full_cmd}")
                     logger.debug(f"STDOUT: {e.stdout}")
                     logger.debug(f"STDERR: {e.stderr}")
@@ -290,17 +290,28 @@ def trim_audiosilence(file, verbosity, test, end_offset, begin_offset,
                 kid3_cmd = f"import '{metadata_bak}' 'CSV unquoted' 2"
                 try:
                     sh.kid3_cli("-c", kid3_cmd, "-c", "save", tmp_audiofile1)
-                except ErrorReturnCode as e:
+                except Exception as e:
                     logger.debug(f"RAN: {e.full_cmd}")
                     logger.debug(f"STDOUT: {e.stdout}")
                     logger.debug(f"STDERR: {e.stderr}")
                     logger.error("Unable to restore metadata.")
                     sys.exit()
                 logger.debug("Restore successful.")
-            
-            
-            sys.exit()
 
+                # Restore album artwork
+                logger.debug(f"Restoring album artwork...")
+                kid3_cmd = f"set picture:'{img_bak}' 2"
+                try:
+                    sh.kid3_cli("-c", kid3_cmd, "-c", "save", tmp_audiofile1)
+                except Exception as e:
+                    logger.debug(f"RAN: {e.full_cmd}")
+                    logger.debug(f"STDOUT: {e.stdout}")
+                    logger.debug(f"STDERR: {e.stderr}")
+                    logger.error("Unable to restore album artwork.")
+                    sys.exit()
+                logger.debug("Restore successful.")
+            
+            # Send original file to trash
             try:
                 send2trash(str(audiofile))
                 logger.debug("Original file successfully sent to trash.")
@@ -308,14 +319,26 @@ def trim_audiosilence(file, verbosity, test, end_offset, begin_offset,
                 logger.error("Problem sending original file to trash.")
                 sys.exit(7)
 
+            # Replace original file with trimmed version
+            logger.debug("Renaming temp file as original file...")
             try:
-                Path(tmp_audiofile).rename(audiofile)
-                logger.debug("Successfuly renamed temp file as original file.")
+                Path(tmp_audiofile1).rename(audiofile)
             except:
                 logger.error("Problem renaming temp file as original file.")
                 sys.exit(8)
+            logger.debug("Successfuly renamed temp file as original file.")
+
+            # Delete temp working directory
+            logger.debug("Deleting temp working directory...")
+            try:
+                shutil.rmtree(tmp_audiofile1.parent)
+            except IOError as e:
+                logger.error(f"Unable to delete temp working directory. {e}")
+                sys.exit()
+            logger.debug("Delete successful.")
 
             logger.info("File successfully trimmed.")
+        
         else:
             logger.info("--test flag enabled.  Original file will remain " +
                         "intact.")
