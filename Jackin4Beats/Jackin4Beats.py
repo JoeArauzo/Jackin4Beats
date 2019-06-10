@@ -23,6 +23,7 @@ from pydub import AudioSegment
 from send2trash import send2trash
 import re
 import taglib
+import time
 
 
 def detect_leading_silence(sound, silence_threshold, chunk_size=1):
@@ -111,15 +112,13 @@ def trim_audiosilence(file, verbosity, test, end_offset, begin_offset,
         sys.exit(4)
 
     # Obtain audio segment from file
+    logger.debug(f"Opening '{audiofile}' for analysis...")
     try:
         sound = AudioSegment.from_file(audiofile)
     except IOError as e:
         logger.error(f"I/O error({e.errno}) - {e.strerror}: '{audiofile}'")
         sys.exit(5)
-    # except:
-    #     logger.error(f"Invalid data found when processing '{audiofile.name}'" +
-    #                  ".  Please check the file is a valid audio file.")
-    #     sys.exit(6) 
+    logger.debug("Open successful.")
 
     # Display info
     duration_ms = len(sound)
@@ -190,12 +189,32 @@ def trim_audiosilence(file, verbosity, test, end_offset, begin_offset,
                 f"{str(timedelta(milliseconds=len(trimmed_sound)))[:-3]}")
         # Perform trim process if test flag not set
         if not test:
-            logger.debug(f"Opening '{audiofile}' to inspect metadata.")
+            # Copy file to temp working directory
+            logger.debug("Creating temp working directory at " +
+                            f"'{tmp_audiofile1.parent}'...")
             try:
-                metadata = taglib.File(str(audiofile))
+                tmp_audiofile1.parent.mkdir(parents=True)
             except:
-                logger.error("Unable to inspect audio metadata.")
+                logger.error("Unable to create temp working directory.")
                 sys.exit()
+            logger.debug("Temp working directory created successfully.")
+            logger.debug("Copying file to temp working directory...")
+            try:
+                shutil.copy2(audiofile, tmp_audiofile1.parent)
+            except IOError as e:
+                logger.error(f"Unable to copy file. {e}")
+                sys.exit()
+            logger.debug("Copy successful.")
+            
+            # Inspect metadata
+            logger.debug(f"Opening '{tmp_audiofile1}' to acquire metadata...")
+            try:
+                metadata = taglib.File(str(tmp_audiofile1))
+            except:
+                logger.error("Unable to acquire audio metadata.")
+                sys.exit()
+            logger.debug("Metadata acquired successfully.")
+            
             # Backup ID3 tags if detected
             if len(metadata.tags):
 
@@ -203,91 +222,81 @@ def trim_audiosilence(file, verbosity, test, end_offset, begin_offset,
                 if ( (not 'TRACKNUMBER' in metadata.tags) or
                         (not len(metadata.tags["TRACKNUMBER"])) ):
                     metadata.tags["TRACKNUMBER"] = ["1"]
-                    logger.debug("ID3 TRACKNUMBER missing.  Setting to '1'.")
+                    logger.debug("ID3 TRACKNUMBER missing.  Setting to value " +
+                                 "'1'...")
                     try:
                         metadata.save()
                     except:
                         logger.error("Unable to set ID3 TRACKNUMBER.")
                         sys.exit()
+                    logger.debug("Value set successfully.")
 
-                # Copy file to temp working directory
-                logger.debug("Creating temp working directory at " +
-                             f"'{tmp_audiofile1.parent}'.")
-                try:
-                    tmp_audiofile1.parent.mkdir(parents=True)
-                except:
-                    logger.error("Unable to create temp working directory.")
-                    sys.exit()
-                logger.debug(f"Opening '{audiofile}' to inspect metadata.")
-                try:
-                    shutil.copy2(audiofile, tmp_audiofile1.parent)
-                except IOError as e:
-                    logger.error(f"Unable to copy file. {e}")
-                    sys.exit()
-
-                # Clear value for encoded-by
-                logger.debug("Clearing value of ENCODEDBY.")
+                # Clear value for ENODEDBY
+                logger.debug("Clearing value of ENCODEDBY...")
                 kid3_cmd = "set encoded-by '' 2"
                 try:
                     sh.kid3_cli("-c", kid3_cmd, "-c", "save", tmp_audiofile1)
-                except Exception as e:
+                except ErrorReturnCode as e:
                     logger.debug(f"RAN: {e.full_cmd}")
                     logger.debug(f"STDOUT: {e.stdout}")
                     logger.debug(f"STDERR: {e.stderr}")
                     logger.error("Unable to clear value of ENCODEDBY.")
                     sys.exit()
+                logger.debug("Value cleared successfully.")
                 
                 # Backup metadata
                 metadata_bak = "metadata.csv"
                 metadata_bak = tmp_audiofile1.parent / metadata_bak
-                logger.debug(f"Exporting metadata to '{metadata_bak}'.")
+                logger.debug(f"Exporting metadata to '{metadata_bak}'...")
                 kid3_cmd = f"export '{metadata_bak}' 'CSV unquoted' 2"
                 try:
                     sh.kid3_cli("-c", kid3_cmd, tmp_audiofile1)
-                except Exception as e:
+                except ErrorReturnCode as e:
                     logger.debug(f"RAN: {e.full_cmd}")
                     logger.debug(f"STDOUT: {e.stdout}")
                     logger.debug(f"STDERR: {e.stderr}")
                     logger.error("Unable to export tags.")
                     sys.exit()
+                logger.debug("Export successful.")
                 
-                # Export cover art
-                logger.debug(f"Exporting image.")
+                # Export album artwork
+                logger.debug(f"Exporting album artwork...")
                 img_bak = "image.jpg"
                 img_bak = tmp_audiofile1.parent / img_bak
                 kid3_cmd = f"get picture:'{img_bak}'"
                 try:
                     sh.kid3_cli("-c", kid3_cmd, tmp_audiofile1)
-                except Exception as e:
+                except ErrorReturnCode as e:
                     logger.debug(f"RAN: {e.full_cmd}")
                     logger.debug(f"STDOUT: {e.stdout}")
                     logger.debug(f"STDERR: {e.stderr}")
-                    logger.error("Unable to export image.")
+                    logger.error("Unable to export album artwork.")
                     sys.exit()
+                logger.debug("Export successful.")
 
             # Save trimmed audio file
             os.remove(tmp_audiofile1)
-            logger.debug("Attempting to save trimmed file as " +
-                        f"'{tmp_audiofile1}'.")
+            logger.debug(f"Saving trimmed audio file as '{tmp_audiofile1}'...")
             try:
                 trimmed_sound.export(tmp_audiofile1, format='aiff')
-                logger.debug("Export successful.")
             except:
-                logger.error("Problem exporting temp file.")
+                logger.error("Problem saving trimmed audio file.")
                 sys.exit(6)
+            logger.debug("Save successful.")
             
-            # Import metadata to trimmed audio file
+            # Restore metadata to trimmed audio file
             if len(metadata.tags):
-                logger.debug(f"Importing metadata...")
+                logger.debug(f"Restoring metadata...")
                 kid3_cmd = f"import '{metadata_bak}' 'CSV unquoted' 2"
                 try:
                     sh.kid3_cli("-c", kid3_cmd, "-c", "save", tmp_audiofile1)
-                except Exception as e:
+                except ErrorReturnCode as e:
                     logger.debug(f"RAN: {e.full_cmd}")
                     logger.debug(f"STDOUT: {e.stdout}")
                     logger.debug(f"STDERR: {e.stderr}")
-                    logger.error("Unable to import metadata.")
+                    logger.error("Unable to restore metadata.")
                     sys.exit()
+                logger.debug("Restore successful.")
             
             
             sys.exit()
