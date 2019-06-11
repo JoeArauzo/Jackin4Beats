@@ -55,13 +55,15 @@ def detect_leading_silence(sound, silence_threshold, chunk_size=1):
               help='beggining offset (default: 0 ms)')
 @click.option('--end_offset', '-e', metavar='<ms>', default=0, type=int,
               help='ending offset (default: 0 ms)')
+@click.option('--namefromtag', is_flag=True,
+              help="Name trimmed file '{artist} - {title}'")
 @click.option('--test', is_flag=True,
               help='Perform test run without making changes')
 @click.option('--verbose', 'verbosity', flag_value='verbose',
               help='Verbose output')
 @click.option('--debug', 'verbosity', flag_value='debug',
               help='Debug output')
-def trim_audiosilence(file, verbosity, test, end_offset, begin_offset,
+def trim_audiosilence(file, verbosity, namefromtag, test, end_offset, begin_offset,
                       threshold):
     """
     This command-line tool removes leading and trailing silence from an AIFF
@@ -336,6 +338,20 @@ def trim_audiosilence(file, verbosity, test, end_offset, begin_offset,
                 logger.error(f"Unable to delete temp working directory. {e}")
                 sys.exit()
             logger.debug("Delete successful.")
+
+            if len(metadata.tags) and namefromtag: 
+                # Rename trimmed file from tags
+                logger.debug("Renaming trimmed file as {artist} - {title}...")
+                kid3_cmd = "fromtag '%{artist} - %{title}' 2"
+                try:
+                    sh.kid3_cli("-c", kid3_cmd, audiofile)
+                except Exception as e:
+                    logger.debug(f"RAN: {e.full_cmd}")
+                    logger.debug(f"STDOUT: {e.stdout}")
+                    logger.debug(f"STDERR: {e.stderr}")
+                    logger.error("Unable to rename trimmed file.")
+                    sys.exit()
+                logger.debug("Rename successful.")
 
             logger.info("File successfully trimmed.")
         
