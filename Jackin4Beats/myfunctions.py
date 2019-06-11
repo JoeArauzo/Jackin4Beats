@@ -24,7 +24,7 @@ def initclogger(name, level):
         c_handler.setLevel(logging.ERROR)
 
     # Create formatters and add it to handlers
-    c_formatter = logging.Formatter('%(levelname)s: %(message)s')
+    c_formatter = logging.Formatter('%(levelname)5s: %(message)s')
     c_handler.setFormatter(c_formatter)
 
     # # Add handlers to the logger
