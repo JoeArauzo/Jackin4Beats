@@ -22,7 +22,6 @@ import shutil
 from pydub import AudioSegment
 from send2trash import send2trash
 import re
-import taglib
 import time
 
 
@@ -86,19 +85,20 @@ def trim_audiosilence(file, verbosity, namefromtag, test, end_offset, begin_offs
         logger.error(f"The file '{audiofile}' does not exist.")
         sys.exit(1)
     
-    # Exit if kid3-cli is not accessible
-    if not sh.which('kid3-cli'):
-        logger.error("The dependency, KID3-CLI, is not accessible.  Please " +
-                     "install or check the PATH.")
-        sys.exit(2)
-    
-    # Exit if ffmpeg is not accessible
-    if not sh.which('ffmpeg'):
-        logger.error("The dependency, FFMPEG, is not accessible.  Please " +
-                     "install or check the PATH.")
-        sys.exit(3)
+    # Dependency checking
+    dependencies = {
+        'KID3-CLI': 'kid3-cli',
+        'FFMPEG': 'ffmpeg',
+        'TAGLIB': 'taglib-config'
+    }
+    for dependency, file in dependencies.items():
+        if not shutil.which(file):
+            logger.error(f"The dependency, {dependency}, is not accessible. " +
+                         " Please install or check the PATH.")
+            sys.exit(2)
 
     # Initialize variables
+    import taglib
     start_time = datetime.now()
     tmp_name = f"{start_time:%Y%m%dT%H%M%S%f}"
     audiofile_ext = audiofile.suffix.lower()[1:]
