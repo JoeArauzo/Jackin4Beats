@@ -362,8 +362,7 @@ def trim_audiosilence(file, verbosity, namefromtag, test, end_offset, begin_offs
     else:
         logger.info("No audio silence detected.  Nothing to trim.")
     
-    logger.debug("Process completed in      :  " +
-                 f"{datetime.now() - start_time}")
+    logger.debug(f"Process completed in {datetime.now() - start_time}")
     click.echo("Done.")
 
 
