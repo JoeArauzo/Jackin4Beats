@@ -48,6 +48,51 @@ def detect_leading_silence(sound, silence_threshold, chunk_size=1):
     return counter_ms
 
 
+
+@click.command()
+@click.argument("file")
+@click.option("--metadata_field", "-m", default="Grouping",
+              help="The metadata field to write the source material info to.")
+@click.option("--format", "-f", metavar="<AIFF/FLAC/MP3/...>",
+              help="Format of source material. Defaults to inspecting FILE " +
+              "if not provided.")
+@click.option("--bitrate", "-b", metavar="<Kbps>",
+              help="Bit Rate of source material, i.e. '1411'.  Defaults to " +
+              "inspecting FILE if not provided.")
+@click.option("--samplingrate", "-s", metavar="<KHz>",
+              help="Sampling Rate of source material, i.e. '44.1'.  Defaults" +
+              " to inspecting FILE if not provided.")
+@click.option("--bitdepth", "-d", metavar="<bits>",
+              help="Bit Depth of source material, i.e. '16'. Defaults to " +
+              "inspecting FILE if not provided.")
+@click.option("--channels", "-c", metavar="<channels>",
+              help="Number of Channels of source material, i.e. '2'.  " +
+              "Defaults to inspecting FILE if not provided.")
+@click.option("--test", is_flag=True,
+              help="Perform test run without making changes")
+@click.option("--verbose", "verbosity", flag_value="verbose",
+              help="Verbose output")
+@click.option("--debug", "verbosity", flag_value="debug",
+              help="Debug output")
+def write_sourceinfo(file, metadata_field, format, bitrate, samplingrate, 
+                     bitdepth, channels, test, verbosity):
+    """
+    This CLI tool writes source material information to the 'Grouping' metadata 
+    field of the FILE specificed.  For example 'Source: AIFF, 1,411 Kbps,
+    44.1 KHz, 2 channels'.
+    """ 
+
+    # Initialize logging
+    if verbosity == 'verbose':
+        logger = initclogger(__name__, 'INFO')
+    elif verbosity == 'debug':
+        logger = initclogger(__name__, 'DEBUG')
+    else:
+        logger = initclogger(__name__, 'ERROR')
+    logger.info(f"Executing WRITE-SOURCEINFO version {__version__}.")
+
+
+
 @click.command()
 @click.argument('file')
 @click.option('--threshold', '-t', metavar='<dB>', default=-96.0, type=float,
@@ -376,3 +421,7 @@ def main():
     click.echo('TRIM-AUDIOSILENCE')
     click.echo('--------------------')
     print_help_msg(trim_audiosilence)
+    click.echo('\n\n')
+    click.echo('WRITE-SOURCEINFO')
+    click.echo('--------------------')
+    print_help_msg(write_sourceinfo)
