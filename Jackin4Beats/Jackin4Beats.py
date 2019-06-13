@@ -84,11 +84,14 @@ def write_sourceinfo(file, metadata_field, format, bitrate, samplingrate,
 
     # Initialize logging
     if verbosity == 'verbose':
-        logger = initclogger(__name__, 'INFO')
+        logger = initcflogger(__name__, 'INFO', RDNN, 'trim-audiosilence',
+                              SUPPORTED_PLATFORMS)
     elif verbosity == 'debug':
-        logger = initclogger(__name__, 'DEBUG')
+        logger = initcflogger(__name__, 'DEBUG', RDNN, 'trim-audiosilence',
+                              SUPPORTED_PLATFORMS)
     else:
-        logger = initclogger(__name__, 'ERROR')
+        logger = initcflogger(__name__, 'ERROR', RDNN, 'trim-audiosilence',
+                              SUPPORTED_PLATFORMS)
     logger.info(f"Executing WRITE-SOURCEINFO version {__version__}.")
 
 
@@ -119,11 +122,14 @@ def trim_audiosilence(file, verbosity, namefromtag, test, end_offset, begin_offs
     
     # Initialize logging
     if verbosity == 'verbose':
-        logger = initcflogger(__name__, 'INFO', RDNN, 'trim-audiosilence', SUPPORTED_PLATFORMS)
+        logger = initcflogger(__name__, 'INFO', RDNN, 'trim-audiosilence',
+                              SUPPORTED_PLATFORMS)
     elif verbosity == 'debug':
-        logger = initcflogger(__name__, 'DEBUG', RDNN, 'trim-audiosilence', SUPPORTED_PLATFORMS)
+        logger = initcflogger(__name__, 'DEBUG', RDNN, 'trim-audiosilence',
+                              SUPPORTED_PLATFORMS)
     else:
-        logger = initcflogger(__name__, 'ERROR', RDNN, 'trim-audiosilence', SUPPORTED_PLATFORMS)
+        logger = initcflogger(__name__, 'ERROR', RDNN, 'trim-audiosilence',
+                              SUPPORTED_PLATFORMS)
     logger.info(f"Executing TRIM-AUDIOSILENCE version {__version__}.")
 
     # Exit if file does not exist
