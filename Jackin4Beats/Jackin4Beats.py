@@ -51,11 +51,13 @@ def detect_leading_silence(sound, silence_threshold, chunk_size=1):
 
 @click.command()
 @click.argument("file")
-@click.option("--metadata_field", "-m", default="Grouping",
-              help="The metadata field to write the source material info to.")
-@click.option("--format", "-f", metavar="<AIFF/FLAC/MP3/...>",
-              help="Format of source material. Defaults to inspecting FILE " +
-              "if not provided.")
+@click.option("--metadata", "-m", default="Grouping", metavar="<field>",
+              help="The metadata field to write the source material info to, " +
+              "e.g. 'Composer' or 'Comments' or 'Description'.  (default: " +
+              "'Grouping'")
+@click.option("--format", "-f", metavar="<type>",
+              help="Format of source material, i.e. 'FLAC' or 'AAC' or 'MP3'" +
+              ".  Defaults to inspecting FILE if not provided.")
 @click.option("--bitrate", "-b", metavar="<Kbps>",
               help="Bit Rate of source material, i.e. '1411'.  Defaults to " +
               "inspecting FILE if not provided.")
@@ -74,7 +76,7 @@ def detect_leading_silence(sound, silence_threshold, chunk_size=1):
               help="Verbose output")
 @click.option("--debug", "verbosity", flag_value="debug",
               help="Debug output")
-def write_sourceinfo(file, metadata_field, format, bitrate, samplingrate, 
+def write_sourceinfo(file, metadata, format, bitrate, samplingrate, 
                      bitdepth, channels, test, verbosity):
     """
     This CLI tool writes source material information to the 'Grouping' metadata 
@@ -123,8 +125,8 @@ def write_sourceinfo(file, metadata_field, format, bitrate, samplingrate,
 def trim_audiosilence(file, verbosity, namefromtag, test, end_offset, begin_offset,
                       threshold):
     """
-    This command-line tool removes leading and trailing silence from an AIFF
-    audio file.
+    This CLI tool removes leading and trailing silence from an AIFF
+    audio file and preserves metadata.
     """
     
     

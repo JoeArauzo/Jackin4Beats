@@ -48,15 +48,15 @@ $ pipx install --spec git+https://github.com/JoeArauzo/Jackin4Beats.git Jackin4B
 
 ### Usage
 
-Once the package is installed, the following executable is available from the shell.
+Once the package is installed, the following executables are available from the shell.
 
 ```text
 TRIM-AUDIOSILENCE
 --------------------
 Usage: trim-audiosilence [OPTIONS] FILE
 
-  This command-line tool removes leading and trailing silence from an AIFF
-  audio file.
+  This CLI tool removes leading and trailing silence from an AIFF audio file
+  and preserves metadata.
 
 Options:
   -t, --threshold <dB>     threshold (default: -96.0 dB)
@@ -79,25 +79,24 @@ Usage: write-sourceinfo [OPTIONS] FILE
   Kbps, 44.1 KHz, 2 channels'.
 
 Options:
-  -m, --metadata_field TEXT       The metadata field to write the source
-                                  material info to.
-  -f, --format <AIFF/FLAC/MP3/...>
-                                  Format of source material. Defaults to
-                                  inspecting FILE if not provided.
-  -b, --bitrate <Kbps>            Bit Rate of source material, i.e. '1411'.
-                                  Defaults to inspecting FILE if not provided.
-  -s, --samplingrate <KHz>        Sampling Rate of source material, i.e.
-                                  '44.1'.  Defaults to inspecting FILE if not
-                                  provided.
-  -d, --bitdepth <bits>           Bit Depth of source material, i.e. '16'.
-                                  Defaults to inspecting FILE if not provided.
-  -c, --channels <channels>       Number of Channels of source material, i.e.
-                                  '2'.  Defaults to inspecting FILE if not
-                                  provided.
-  --test                          Perform test run without making changes
-  --verbose                       Verbose output
-  --debug                         Debug output
-  --help                          Show this message and exit..
+  -m, --metadata <field>     The metadata field to write the source material
+                             info to, e.g. 'Composer' or 'Comments' or
+                             'Description'.  (default: 'Grouping'
+  -f, --format <type>        Format of source material, i.e. 'FLAC' or 'AAC'
+                             or 'MP3'.  Defaults to inspecting FILE if not
+                             provided.
+  -b, --bitrate <Kbps>       Bit Rate of source material, i.e. '1411'.
+                             Defaults to inspecting FILE if not provided.
+  -s, --samplingrate <KHz>   Sampling Rate of source material, i.e. '44.1'.
+                             Defaults to inspecting FILE if not provided.
+  -d, --bitdepth <bits>      Bit Depth of source material, i.e. '16'. Defaults
+                             to inspecting FILE if not provided.
+  -c, --channels <channels>  Number of Channels of source material, i.e. '2'.
+                             Defaults to inspecting FILE if not provided.
+  --test                     Perform test run without making changes
+  --verbose                  Verbose output
+  --debug                    Debug output
+  --help                     Show this message and exit.
 ```
 
 ## Versioning
