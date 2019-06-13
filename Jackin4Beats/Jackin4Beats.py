@@ -162,6 +162,7 @@ def trim_audiosilence(file, verbosity, namefromtag, test, end_offset, begin_offs
 
     # Initialize variables
     import taglib
+    kid3_cli = sh.Command("kid3-cli")
     start_time = datetime.now()
     tmp_name = f"{start_time:%Y%m%dT%H%M%S%f}"
     audiofile_ext = audiofile.suffix.lower()[1:]
@@ -300,7 +301,7 @@ def trim_audiosilence(file, verbosity, namefromtag, test, end_offset, begin_offs
                 logger.debug("Clearing value of ENCODEDBY...")
                 kid3_cmd = "set encoded-by '' 2"
                 try:
-                    sh.kid3_cli("-c", kid3_cmd, "-c", "save", tmp_audiofile1)
+                    kid3_cli("-c", kid3_cmd, "-c", "save", tmp_audiofile1)
                 except sh.ErrorReturnCode as e:
                     logger.debug(f"RAN: {e.full_cmd}")
                     logger.debug(f"STDOUT: {e.stdout}")
@@ -315,7 +316,7 @@ def trim_audiosilence(file, verbosity, namefromtag, test, end_offset, begin_offs
                 logger.debug(f"Exporting metadata to '{metadata_bak}'...")
                 kid3_cmd = f"export '{metadata_bak}' 'CSV unquoted' 2"
                 try:
-                    sh.kid3_cli("-c", kid3_cmd, tmp_audiofile1)
+                    kid3_cli("-c", kid3_cmd, tmp_audiofile1)
                 except sh.ErrorReturnCode as e:
                     logger.debug(f"RAN: {e.full_cmd}")
                     logger.debug(f"STDOUT: {e.stdout}")
@@ -330,7 +331,7 @@ def trim_audiosilence(file, verbosity, namefromtag, test, end_offset, begin_offs
                 img_bak = tmp_audiofile1.parent / img_bak
                 kid3_cmd = f"get picture:'{img_bak}'"
                 try:
-                    sh.kid3_cli("-c", kid3_cmd, tmp_audiofile1)
+                    kid3_cli("-c", kid3_cmd, tmp_audiofile1)
                 except sh.ErrorReturnCode as e:
                     logger.debug(f"RAN: {e.full_cmd}")
                     logger.debug(f"STDOUT: {e.stdout}")
@@ -354,7 +355,7 @@ def trim_audiosilence(file, verbosity, namefromtag, test, end_offset, begin_offs
                 logger.debug(f"Restoring metadata...")
                 kid3_cmd = f"import '{metadata_bak}' 'CSV unquoted' 2"
                 try:
-                    sh.kid3_cli("-c", kid3_cmd, "-c", "save", tmp_audiofile1)
+                    kid3_cli("-c", kid3_cmd, "-c", "save", tmp_audiofile1)
                 except sh.ErrorReturnCode as e:
                     logger.debug(f"RAN: {e.full_cmd}")
                     logger.debug(f"STDOUT: {e.stdout}")
@@ -367,7 +368,7 @@ def trim_audiosilence(file, verbosity, namefromtag, test, end_offset, begin_offs
                 logger.debug(f"Restoring album artwork...")
                 kid3_cmd = f"set picture:'{img_bak}' 2"
                 try:
-                    sh.kid3_cli("-c", kid3_cmd, "-c", "save", tmp_audiofile1)
+                    kid3_cli("-c", kid3_cmd, "-c", "save", tmp_audiofile1)
                 except sh.ErrorReturnCode as e:
                     logger.debug(f"RAN: {e.full_cmd}")
                     logger.debug(f"STDOUT: {e.stdout}")
@@ -407,7 +408,7 @@ def trim_audiosilence(file, verbosity, namefromtag, test, end_offset, begin_offs
                 logger.debug("Renaming trimmed file as {artist} - {title}...")
                 kid3_cmd = "fromtag '%{artist} - %{title}' 2"
                 try:
-                    sh.kid3_cli("-c", kid3_cmd, audiofile)
+                    kid3_cli("-c", kid3_cmd, audiofile)
                 except sh.ErrorReturnCode as e:
                     logger.debug(f"RAN: {e.full_cmd}")
                     logger.debug(f"STDOUT: {e.stdout}")
