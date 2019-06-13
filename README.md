@@ -34,7 +34,7 @@ The command-line tool, `trim-audiosilence`, included with this Python package ha
 ### Installation
 
 > It is recommended to perform the install using pipx.  Pipx allows you to execute binaries from Python packages in isolated environments.  This is generally good housekeeping and helps to maintain a tidy global python environment on your system.  Here's how to install pipx:
->    ```sh
+>    ```text
 >    $ python3 -m pip install pipx
 >    $ python3 -m userpath append ~/.local/bin
 >    ```
@@ -42,7 +42,7 @@ The command-line tool, `trim-audiosilence`, included with this Python package ha
 
 Here's how to install Jackin4Beats:
 
-```sh
+```text
 $ pipx install --spec git+https://github.com/JoeArauzo/Jackin4Beats.git Jackin4Beats
 ```
 
@@ -50,7 +50,7 @@ $ pipx install --spec git+https://github.com/JoeArauzo/Jackin4Beats.git Jackin4B
 
 Once the package is installed, the following executable is available from the shell.
 
-```sh
+```text
 TRIM-AUDIOSILENCE
 --------------------
 Usage: trim-audiosilence [OPTIONS] FILE
