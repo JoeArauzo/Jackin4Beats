@@ -54,22 +54,22 @@ def detect_leading_silence(sound, silence_threshold, chunk_size=1):
 @click.option("--metadata", "-m", default="Grouping", metavar="<field>",
               help="The metadata field to write the source material info to, " +
               "e.g. 'Composer' or 'Comments' or 'Description'.  (default: " +
-              "'Grouping'")
+              "'Grouping')")
 @click.option("--format", "-f", metavar="<type>",
-              help="Format of source material, i.e. 'FLAC' or 'AAC' or 'MP3'" +
-              ".  Defaults to inspecting FILE if not provided.")
+              help="Format of source material, i.e. 'FLAC', 'AAC', 'MP3', " +
+              " etc..  (default: from FILE)")
 @click.option("--bitrate", "-b", metavar="<Kbps>",
-              help="Bit Rate of source material, i.e. '1411'.  Defaults to " +
-              "inspecting FILE if not provided.")
+              help="Bit Rate of source material, i.e. '1411'.  (default: " +
+              "from FILE)")
 @click.option("--samplingrate", "-s", metavar="<KHz>",
-              help="Sampling Rate of source material, i.e. '44.1'.  Defaults" +
-              " to inspecting FILE if not provided.")
+              help="Sampling Rate of source material, i.e. '44.1', '48', " +
+              "'96'.  (default: from FILE)")
 @click.option("--bitdepth", "-d", metavar="<bits>",
-              help="Bit Depth of source material, i.e. '16'. Defaults to " +
-              "inspecting FILE if not provided.")
+              help="Bit Depth of source material, i.e. '16', '24'.  (default:" +
+              " from FILE)")
 @click.option("--channels", "-c", metavar="<channels>",
               help="Number of Channels of source material, i.e. '2'.  " +
-              "Defaults to inspecting FILE if not provided.")
+              "(default: from FILE)")
 @click.option("--test", is_flag=True,
               help="Perform test run without making changes")
 @click.option("--verbose", "verbosity", flag_value="verbose",
