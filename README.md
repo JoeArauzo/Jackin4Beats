@@ -67,6 +67,37 @@ Options:
   --verbose                Verbose output
   --debug                  Debug output
   --help                   Show this message and exit.
+
+
+
+WRITE-SOURCEINFO
+--------------------
+Usage: write-sourceinfo [OPTIONS] FILE
+
+  This CLI tool writes source material information to the 'Grouping'
+  metadata  field of the FILE specificed.  For example 'Source: AIFF, 1,411
+  Kbps, 44.1 KHz, 2 channels'.
+
+Options:
+  -m, --metadata_field TEXT       The metadata field to write the source
+                                  material info to.
+  -f, --format <AIFF/FLAC/MP3/...>
+                                  Format of source material. Defaults to
+                                  inspecting FILE if not provided.
+  -b, --bitrate <Kbps>            Bit Rate of source material, i.e. '1411'.
+                                  Defaults to inspecting FILE if not provided.
+  -s, --samplingrate <KHz>        Sampling Rate of source material, i.e.
+                                  '44.1'.  Defaults to inspecting FILE if not
+                                  provided.
+  -d, --bitdepth <bits>           Bit Depth of source material, i.e. '16'.
+                                  Defaults to inspecting FILE if not provided.
+  -c, --channels <channels>       Number of Channels of source material, i.e.
+                                  '2'.  Defaults to inspecting FILE if not
+                                  provided.
+  --test                          Perform test run without making changes
+  --verbose                       Verbose output
+  --debug                         Debug output
+  --help                          Show this message and exit..
 ```
 
 ## Versioning
