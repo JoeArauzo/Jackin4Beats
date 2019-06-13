@@ -84,15 +84,23 @@ def write_sourceinfo(file, metadata_field, format, bitrate, samplingrate,
 
     # Initialize logging
     if verbosity == 'verbose':
-        logger = initcflogger(__name__, 'INFO', RDNN, 'trim-audiosilence',
+        logger = initcflogger(__name__, 'INFO', RDNN, 'write-sourceinfo',
                               SUPPORTED_PLATFORMS)
     elif verbosity == 'debug':
-        logger = initcflogger(__name__, 'DEBUG', RDNN, 'trim-audiosilence',
+        logger = initcflogger(__name__, 'DEBUG', RDNN, 'write-sourceinfo',
                               SUPPORTED_PLATFORMS)
     else:
-        logger = initcflogger(__name__, 'ERROR', RDNN, 'trim-audiosilence',
+        logger = initcflogger(__name__, 'ERROR', RDNN, 'write-sourceinfo',
                               SUPPORTED_PLATFORMS)
     logger.info(f"Executing WRITE-SOURCEINFO version {__version__}.")
+
+    # Exit if file does not exist
+    audiofile = Path(file).resolve()
+    if not audiofile.is_file():
+        logger.error(f"The file '{audiofile}' does not exist.")
+        sys.exit(1)# 
+
+
 
 
 
