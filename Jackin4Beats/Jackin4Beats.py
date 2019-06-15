@@ -170,16 +170,6 @@ def write_sourceinfo(file, metadata, prefix, format, bitrate, samplingrate,
     if not a_track:
         logger.error(f"No audio track was detected in '{audiofile}'.")
         sys.exit(4)
-        
-    # # Exit if audio format not supported
-    # format = g_track.other_file_name[0]
-    # if not format in supported_audio_formats:
-    #     logger.error(f"'{format}' is not a supported " +
-    #                  "audio format.  The following are the supported " +
-    #                  "audio formats: " +
-    #                  f"{', '.join(map(str, supported_audio_formats))}")
-    #     sys.exit(5)
-    # logger.debug(f"Audio track is '{format}' format.")
     
     # Format of audio
     if format:
