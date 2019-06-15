@@ -54,20 +54,21 @@ def detect_leading_silence(sound, silence_threshold, chunk_size=1):
 @click.command()
 @click.argument("file")
 @click.option("--metadata", "-m", default="Grouping", metavar="<field>",
+              type=str,
               help="The metadata field to write the source material info to, " +
-              "e.g. 'Composer' or 'Comments' or 'Description'.  (default: " +
-              "'Grouping')")
+              "e.g. 'Comments', 'Composer', 'Description', 'Grouping'.  " +
+              "(default: 'Grouping')")
 @click.option("--format", "-f", metavar="<type>",
               help="Format of source material, i.e. 'AAC LC', 'AIFF', " +
               "'ALAC', 'FLAC', 'HE-ACC', 'MP3', 'Vorbis', 'Opus'.  " +
               "(default: from FILE)")
-@click.option("--bitrate", "-b", metavar="<Kbps>",
+@click.option("--bitrate", "-b", metavar="<Kbps>", type=int,
               help="Bit Rate of source material, i.e. '1411'.  (default: " +
               "from FILE if --format specified)")
-@click.option("--samplingrate", "-s", metavar="<kHz>",
+@click.option("--samplingrate", "-s", metavar="<kHz>", type=float,
               help="Sampling Rate of source material, i.e. '44.1', '48', " +
               "'96'.  (default: from FILE if --format specified)")
-@click.option("--bitdepth", "-d", metavar="<bits>",
+@click.option("--bitdepth", "-d", metavar="<bits>", type=int,
               help="Bit Depth of source material, i.e. '16', '24'.  (default:" +
               " from FILE if --format specified)")
 @click.option("--channels", "-c", metavar="<channels>",
@@ -199,7 +200,14 @@ def write_sourceinfo(file, metadata, format, bitrate, samplingrate,
             source_str = (f"Source: {format}, {bitrate} Kbps, {samplingrate}" +
                           f", {bitdepth}, {channels}")
 
-        # 
+        # Inspect metadata
+        logger.debug(f"Opening '{audiofile}' to acquire metadata...")
+        try:
+            metadata = taglib.File(str(audiofile))
+        except:
+            logger.error("Unable to acquire audio metadata.")
+            sys.exit()
+        logger.debug("Metadata acquired successfully.")
 
 
 
