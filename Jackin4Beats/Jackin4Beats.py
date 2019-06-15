@@ -58,20 +58,24 @@ def detect_leading_silence(sound, silence_threshold, chunk_size=1):
               help="The metadata field to write the source material info to, " +
               "e.g. 'Comments', 'Composer', 'Description', 'Grouping'.  " +
               "(default: 'Grouping')")
-@click.option("--format", "-f", metavar="<type>",
-              help="Format of source material, i.e. 'AAC LC', 'AIFF', " +
-              "'ALAC', 'FLAC', 'HE-ACC', 'MP3', 'Vorbis', 'Opus'.  " +
-              "(default: from FILE)")
-@click.option("--bitrate", "-b", metavar="<Kbps>", type=int,
+@click.option("--prefix", "-p", default="Source: ", type=str,
+              help="The prefix string to prepend to the source info string, " +
+              "e.g. the 'Source: ' in 'Source: WAV, 1536 Kbps, 48.0 kHz, " +
+              "2 channels'. (default: 'Source: ')")
+@click.option("--format", "-f", metavar="<type>", type=str,
+              help="Format of source material, i.e. AAC LC, AIFF, " +
+              "ALAC, FLAC, HE-ACC, MP3, VORBIS, OPUS, etc..  " +
+              "(default: extracted from FILE)")
+@click.option("--bitrate", "-kbps", metavar="<Kbps>", type=int,
               help="Bit Rate of source material, i.e. '1411'.  (default: " +
-              "from FILE if --format specified)")
-@click.option("--samplingrate", "-s", metavar="<kHz>", type=float,
-              help="Sampling Rate of source material, i.e. '44.1', '48', " +
-              "'96'.  (default: from FILE if --format specified)")
+              "extracted from FILE)")
+@click.option("--samplingrate", "-khz", metavar="<kHz>", type=float,
+              help="Sampling Rate of source material, i.e. '44.1', '48.0', " +
+              "'96.0'.  (default: extracted from FILE)")
 @click.option("--bitdepth", "-d", metavar="<bits>", type=int,
               help="Bit Depth of source material, i.e. '16', '24'.  (default:" +
               " from FILE if --format specified)")
-@click.option("--channels", "-c", metavar="<channels>",
+@click.option("--channels", "-c", metavar="<channels>", type=int,
               help="Number of Channels of source material, i.e. '2'.  " +
               "(default: from FILE if --format specified)")
 @click.option("--test", is_flag=True,
@@ -80,12 +84,12 @@ def detect_leading_silence(sound, silence_threshold, chunk_size=1):
               help="Verbose output")
 @click.option("--debug", "verbosity", flag_value="debug",
               help="Debug output")
-def write_sourceinfo(file, metadata, format, bitrate, samplingrate, 
+def write_sourceinfo(file, metadata, prefix, format, bitrate, samplingrate, 
                      bitdepth, channels, test, verbosity):
     """
     This CLI tool writes source material information to the 'Grouping' metadata 
-    field of the FILE specificed.  For example 'Source: AIFF, 1,411 Kbps,
-    44.1 KHz, 2 channels'.
+    field of the FILE specificed.  For example 'Source: AIFF, 1536 Kbps,
+    44.1 kHz, 16 bits, 2 channels'.
     """ 
 
     # Initialize logging
@@ -119,6 +123,7 @@ def write_sourceinfo(file, metadata, format, bitrate, samplingrate,
     # Init variables
     g_track = None
     a_track = None
+    properties = []
     supported_audio_formats = ('AAC LC',
                                'AIFF',
                                'ALAC',
@@ -129,85 +134,147 @@ def write_sourceinfo(file, metadata, format, bitrate, samplingrate,
                                'VORBIS',
                                'WAV')
 
-    # Process with media info provided by CLI args
-    if format:
-        #
-        print("Format specified")
+    # # Process with media info provided by CLI args
+    # if format:
+    #     #
+    #     print("Format specified")
     
-    # Process by parsing audiofile for media info
+    # # Process by parsing audiofile for media info
+    # else:
+    # Parse audiofile for media info
+    logger.debug(f"Parsing '{audiofile}'...")
+    try:
+        info = MediaInfo.parse(audiofile)
+    except IOError:
+        logger.error("An IOError occurred while attempting to parse " +
+                        f"'{audiofile}'.")
+        sys.exit(3)
+    except RuntimeError:
+        logger.error("A RuntimeError occurred with 'libmediainfo' " +
+                        f"while attempting to parse '{audiofile}'.")
+        sys.exit(3)
+    except:
+        logger.error("An unknown error occurred while attemptint to " +
+                        f"parse '{audiofile}'.")
+        sys.exit(3)
+    for t in info.tracks:
+        if t.track_type == "General":
+            g_track = t
+            logger.debug("Found General track.")
+        if t.track_type == "Audio":
+            a_track = t
+            logger.debug("Found first Audio track.")
+            break
+    
+    # Exit if no audio track detected
+    if not a_track:
+        logger.error(f"No audio track was detected in '{audiofile}'.")
+        sys.exit(4)
+        
+    # # Exit if audio format not supported
+    # format = g_track.other_file_name[0]
+    # if not format in supported_audio_formats:
+    #     logger.error(f"'{format}' is not a supported " +
+    #                  "audio format.  The following are the supported " +
+    #                  "audio formats: " +
+    #                  f"{', '.join(map(str, supported_audio_formats))}")
+    #     sys.exit(5)
+    # logger.debug(f"Audio track is '{format}' format.")
+    
+    # Format of audio
+    if format:
+        format = format.upper()
+        logger.debug(f"Format specified at command-line: {format}")
     else:
-        # Parse audiofile for media info
-        logger.debug(f"Parsing '{audiofile}'...")
-        try:
-            info = MediaInfo.parse(audiofile)
-        except IOError:
-            logger.error("An IOError occurred while attempting to parse " +
-                         f"'{audiofile}'.")
-            sys.exit(3)
-        except RuntimeError:
-            logger.error("A RuntimeError occurred with 'libmediainfo' " +
-                         f"while attempting to parse '{audiofile}'.")
-            sys.exit(3)
-        except:
-            logger.error("An unknown error occurred while attemptint to " +
-                         f"parse '{audiofile}'.")
-            sys.exit(3)
-        for t in info.tracks:
-            if t.track_type == "General":
-                g_track = t
-                logger.debug("Found General track.")
-            if t.track_type == "Audio":
-                a_track = t
-                logger.debug("Found first Audio track.")
-                break
-        
-        # Exit if no audio track detected
-        if not a_track:
-            logger.error(f"No audio track was detected in '{audiofile}'.")
-            sys.exit(4)
-         
-        # Exit if audio format not supported
         format = g_track.other_file_name[0]
-        if not format in supported_audio_formats:
-            logger.error(f"'{format}' is not a supported " +
-                         "audio format.  The following are the supported " +
-                         "audio formats: " +
-                         f"{', '.join(map(str, supported_audio_formats))}")
-            sys.exit(5)
-        logger.debug(f"Audio track is '{format}' format.")
-        
-        # Acquire common properties
-        bitrate = g_track.overall_bit_rate if format == 'OPUS' else a_track.bit_rate
-        bitrate = bitrate if bitrate < 1000 else bitrate // 1000
-        samplingrate = a_track.other_sampling_rate[0]
-        channels = a_track.other_channel_s[0]
-        # logger.debug(f"Audio track sampling rate: {samplingrate} and is a {type(samplingrate)}")
+        logger.debug(f"Format extracted from FILE: {format}")
+    properties.append(format)
 
-        # Format Source string for OPUS, VORBIS
-        if format in ('OPUS', 'VORBIS'):
-            source_str = (f"Source: {format}, {bitrate} Kbps, {samplingrate}" +
-                         f", {channels}")
-        
-        # Format Source string for AAC LC, HE-AAC, MP3
-        if format in ('AAC LC', 'HE-AAC', 'MP3'):
-            bitrate_mode = a_track.bit_rate_mode
-            source_str = (f"Source: {format}, {bitrate} Kbps {bitrate_mode}" +
-                          f", {samplingrate}, {channels}")
+    # Bit Rate in Kbps
+    if bitrate:
+        bitrate_str = f"{bitrate} Kbps"
+    else:
+        # If audio bit rate missing, as with OPUS, obtain overall bit rate
+        if a_track.bit_rate == None:
+            bitrate = g_track.overall_bit_rate
+        else:
+            bitrate = a_track.bit_rate
+        bitrate = bitrate if bitrate < 1000 else int(round(bitrate, -3) / 1000)
+        bitrate_str = f"{bitrate} Kbps"
+    
+    # Bit Rate Mode
+    fmts_wo_br_mode_displayed = ('AIFF',
+                                 'ALAC',
+                                 'FLAC',
+                                 'OPUS',
+                                 'VORBIS',
+                                 'WAV')
+    br_mode = a_track.bit_rate_mode
+    if format in fmts_wo_br_mode_displayed:
+        br_mode = None
+    if br_mode:
+        bitrate_str = f"{bitrate_str} {br_mode}"
+    properties.append(bitrate_str)
 
-        # Format Source string for AIFF, ALAC, FLAC, WAV
-        if format in ('AIFF', 'ALAC', 'FLAC', 'WAV'):
-            bitdepth = a_track.other_bit_depth[0]
-            source_str = (f"Source: {format}, {bitrate} Kbps, {samplingrate}" +
-                          f", {bitdepth}, {channels}")
+    # Sampling Rate
+    if not samplingrate:
+        samplingrate = a_track.sampling_rate / 1000
+    samplingrate_str = f"{samplingrate:.1f} kHz"
+    properties.append(samplingrate_str)
 
-        # Inspect metadata
-        logger.debug(f"Opening '{audiofile}' to acquire metadata...")
-        try:
-            metadata = taglib.File(str(audiofile))
-        except:
-            logger.error("Unable to acquire audio metadata.")
-            sys.exit()
-        logger.debug("Metadata acquired successfully.")
+    # Bit Depth
+    if not bitdepth:
+        bitdepth = a_track.bit_depth
+    if bitdepth:
+        bitdepth_str = f"{bitdepth} bits"
+        properties.append(bitdepth_str)
+
+    # Channels
+    if not channels:
+        channels = a_track.channel_s
+    channels_str = "channel" if channels < 2 else "channels"
+    channels_str = f"{channels} {channels_str}"
+    properties.append(channels_str)
+
+    # Assemble properties into formatted string
+    properties_str = ', '.join(map(str, properties))
+    properties_str = f"{prefix}{properties_str}"
+    print(properties_str)
+
+    sys.exit()
+
+
+    bitrate = g_track.overall_bit_rate if format == 'OPUS' else a_track.bit_rate
+    bitrate = bitrate if bitrate < 1000 else bitrate // 1000
+    samplingrate = a_track.other_sampling_rate[0]
+    channels = a_track.other_channel_s[0]
+    # logger.debug(f"Audio track sampling rate: {samplingrate} and is a {type(samplingrate)}")
+
+    # Format Source string for OPUS, VORBIS
+    if format in ('OPUS', 'VORBIS'):
+        source_str = (f"Source: {format}, {bitrate} Kbps, {samplingrate}" +
+                        f", {channels}")
+    
+    # Format Source string for AAC LC, HE-AAC, MP3
+    if format in ('AAC LC', 'HE-AAC', 'MP3'):
+        bitrate_mode = a_track.bit_rate_mode
+        source_str = (f"Source: {format}, {bitrate} Kbps {bitrate_mode}" +
+                        f", {samplingrate}, {channels}")
+
+    # Format Source string for AIFF, ALAC, FLAC, WAV
+    if format in ('AIFF', 'ALAC', 'FLAC', 'WAV'):
+        bitdepth = a_track.other_bit_depth[0]
+        source_str = (f"Source: {format}, {bitrate} Kbps, {samplingrate}" +
+                        f", {bitdepth}, {channels}")
+
+    # Inspect metadata
+    logger.debug(f"Opening '{audiofile}' to acquire metadata...")
+    try:
+        metadata = taglib.File(str(audiofile))
+    except:
+        logger.error("Unable to acquire audio metadata.")
+        sys.exit()
+    logger.debug("Metadata acquired successfully.")
 
 
 
