@@ -25,8 +25,8 @@ from pydub import AudioSegment
 from send2trash import send2trash
 import re
 import time
+import taglib
 from pymediainfo import MediaInfo
-import pprint
 
 
 def detect_leading_silence(sound, silence_threshold, chunk_size=1):
@@ -53,7 +53,7 @@ def detect_leading_silence(sound, silence_threshold, chunk_size=1):
 
 @click.command()
 @click.argument("file")
-@click.option("--metadata", "-m", default="Grouping", metavar="<field>",
+@click.option("--metadata_field", "-m", default="Grouping", metavar="<field>",
               type=str,
               help="The metadata field to write the source material info to, " +
               "e.g. Comment, Composer, Grouping.  (default: Grouping)")
@@ -83,7 +83,7 @@ def detect_leading_silence(sound, silence_threshold, chunk_size=1):
               help="Verbose output")
 @click.option("--debug", "verbosity", flag_value="debug",
               help="Debug output")
-def write_sourceinfo(file, metadata, prefix, format, bitrate, samplingrate, 
+def write_sourceinfo(file, metadata_field, prefix, format, bitrate, samplingrate, 
                      bitdepth, channels, test, verbosity):
     """
     This CLI tool writes source material information to the 'Grouping' metadata 
@@ -124,20 +124,30 @@ def write_sourceinfo(file, metadata, prefix, format, bitrate, samplingrate,
     a_track = None
     properties = []
     supported_fields = {
-        'Comments': '',
-        'Composer': '',
+        'Comment': 'COMMENT',
+        'Composer': 'COMPOSER',
         'Grouping': 'CONTENTGROUP'
     }
-    supported_audio_formats = ('AAC LC',
-                               'AIFF',
-                               'ALAC',
-                               'FLAC',
-                               'HE-AAC',
-                               'MP3',
-                               'OPUS',
-                               'VORBIS')
-                               # WAV not supported
-
+    fmts_wo_br_mode_displayed = (
+        'AIFF',
+        'ALAC',
+        'FLAC',
+        'OPUS',
+        'VORBIS',
+        'WAV'
+    )
+    supported_audio_formats = (
+        'AAC LC',
+        'AIFF',
+        'ALAC',
+        'FLAC',
+        'HE-AAC',
+        'MP3',
+        'OPUS',
+        'VORBIS'
+        # WAV not supported
+    )
+                               
     # # Process with media info provided by CLI args
     # if format:
     #     #
@@ -202,12 +212,6 @@ def write_sourceinfo(file, metadata, prefix, format, bitrate, samplingrate,
         bitrate_str = f"{bitrate} Kbps"
     
     # Bit Rate Mode
-    fmts_wo_br_mode_displayed = ('AIFF',
-                                 'ALAC',
-                                 'FLAC',
-                                 'OPUS',
-                                 'VORBIS',
-                                 'WAV')
     br_mode = a_track.bit_rate_mode
     if format in fmts_wo_br_mode_displayed:
         br_mode = None
@@ -240,21 +244,20 @@ def write_sourceinfo(file, metadata, prefix, format, bitrate, samplingrate,
     properties_str = f"{prefix}{properties_str}"
 
     # Inspect metadata
-    logger.debug(f"Opening '{audiofile}' to acquire metadata...")
+    logger.debug(f"Opening '{audiofile}' to inspect metadata...")
     try:
         song = taglib.File(str(audiofile))
     except:
-        logger.error("Unable to acquire audio metadata.")
+        logger.error("Unable to inspect audio metadata.")
         sys.exit()
-    logger.debug("Metadata acquired successfully.")
+    logger.debug("Metadata inspected successfully.")
 
     # Validate metadata field
-    field = metadata.capitalize()
-    if field == 'GROUPING':
-        field = 'CONTENTGROUP'
-    else:
-        logger.error(f"'{metadata}' is not a valid metadata field.")
-        sys.exit()
+    metadata_field = metadata_field.capitalize()
+    if not metadata_field in supported_fields:
+        logger.error(f"'{metadata_field}' is not a supported filed to write " +
+        "to.  The supported fields are: " +
+        f"{', '.join(map(str, supported_fields.keys()))}")
 
     # Update tag
     # entry = 
