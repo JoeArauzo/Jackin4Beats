@@ -259,8 +259,18 @@ def write_sourceinfo(file, metadata_field, prefix, format, bitrate, samplingrate
         "to.  The supported fields are: " +
         f"{', '.join(map(str, supported_fields.keys()))}")
 
-    # Update tag
-    # entry = 
+    # Write source info to metadata filed
+    song.tags[supported_fields[metadata_field]] = [properties_str]
+    logger.debug("Attempting to update metadata with source info...")
+    try:
+        song.save()
+    except:
+        logger.error(f"There was a problem writing '{properties_str}' to " +
+                     f"the '{metadata_field}' field in '{audiofile}'.")
+        sys.exit()
+    logger.debug(f"Successfully wrote '{properties_str}' to the " +
+                 f"'{metadata_field}' field in '{audiofile}'.")
+    click.echo("Done.")
 
 
 
