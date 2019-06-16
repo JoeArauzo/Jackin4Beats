@@ -56,28 +56,27 @@ def detect_leading_silence(sound, silence_threshold, chunk_size=1):
 @click.option("--metadata", "-m", default="Grouping", metavar="<field>",
               type=str,
               help="The metadata field to write the source material info to, " +
-              "e.g. 'Comments', 'Composer', 'Description', 'Grouping'.  " +
-              "(default: 'Grouping')")
+              "e.g. Comment, Composer, Grouping.  (default: Grouping)")
 @click.option("--prefix", "-p", default="Source: ", type=str,
               help="The prefix string to prepend to the source info string, " +
               "e.g. the 'Source: ' in 'Source: WAV, 1536 Kbps, 48.0 kHz, " +
-              "2 channels'. (default: 'Source: ')")
+              "16 bits, 2 channels'. (default: 'Source: ')")
 @click.option("--format", "-f", metavar="<type>", type=str,
               help="Format of source material, i.e. AAC LC, AIFF, " +
               "ALAC, FLAC, HE-ACC, MP3, VORBIS, OPUS, etc..  " +
               "(default: extracted from FILE)")
 @click.option("--bitrate", "-kbps", metavar="<Kbps>", type=int,
-              help="Bit Rate of source material, i.e. '1411'.  (default: " +
+              help="Bit Rate of source material, i.e. 1536, 1411.  (default: " +
               "extracted from FILE)")
 @click.option("--samplingrate", "-khz", metavar="<kHz>", type=float,
-              help="Sampling Rate of source material, i.e. '44.1', '48.0', " +
-              "'96.0'.  (default: extracted from FILE)")
+              help="Sampling Rate of source material, i.e. 44.1, 48.0, " +
+              "96.0.  (default: extracted from FILE)")
 @click.option("--bitdepth", "-d", metavar="<bits>", type=int,
-              help="Bit Depth of source material, i.e. '16', '24'.  (default:" +
-              " from FILE if --format specified)")
+              help="Bit Depth of source material, i.e. 16, 24.  (default:" +
+              " extracted from FILE)")
 @click.option("--channels", "-c", metavar="<channels>", type=int,
               help="Number of Channels of source material, i.e. '2'.  " +
-              "(default: from FILE if --format specified)")
+              "(default: extracted from FILE)")
 @click.option("--test", is_flag=True,
               help="Perform test run without making changes")
 @click.option("--verbose", "verbosity", flag_value="verbose",
@@ -125,8 +124,9 @@ def write_sourceinfo(file, metadata, prefix, format, bitrate, samplingrate,
     a_track = None
     properties = []
     supported_fields = {
-        'GROUPING': 'CONTENTGROUP',
-
+        'Comments': '',
+        'Composer': '',
+        'Grouping': 'CONTENTGROUP'
     }
     supported_audio_formats = ('AAC LC',
                                'AIFF',
@@ -249,7 +249,7 @@ def write_sourceinfo(file, metadata, prefix, format, bitrate, samplingrate,
     logger.debug("Metadata acquired successfully.")
 
     # Validate metadata field
-    field = metadata.upper()
+    field = metadata.capitalize()
     if field == 'GROUPING':
         field = 'CONTENTGROUP'
     else:
