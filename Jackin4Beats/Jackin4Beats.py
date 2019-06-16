@@ -124,6 +124,10 @@ def write_sourceinfo(file, metadata, prefix, format, bitrate, samplingrate,
     g_track = None
     a_track = None
     properties = []
+    supported_fields = {
+        'GROUPING': 'CONTENTGROUP',
+
+    }
     supported_audio_formats = ('AAC LC',
                                'AIFF',
                                'ALAC',
@@ -131,8 +135,8 @@ def write_sourceinfo(file, metadata, prefix, format, bitrate, samplingrate,
                                'HE-AAC',
                                'MP3',
                                'OPUS',
-                               'VORBIS',
-                               'WAV')
+                               'VORBIS')
+                               # WAV not supported
 
     # # Process with media info provided by CLI args
     # if format:
@@ -178,6 +182,11 @@ def write_sourceinfo(file, metadata, prefix, format, bitrate, samplingrate,
     else:
         format = g_track.other_file_name[0]
         logger.debug(f"Format extracted from FILE: {format}")
+    
+    # Exit if audio format not supported
+    if not format in supported_audio_formats:
+        logger.error(f"'{format}' is not a supported audio format.")
+        sys.exit(5)
     properties.append(format)
 
     # Bit Rate in Kbps
@@ -229,43 +238,26 @@ def write_sourceinfo(file, metadata, prefix, format, bitrate, samplingrate,
     # Assemble properties into formatted string
     properties_str = ', '.join(map(str, properties))
     properties_str = f"{prefix}{properties_str}"
-    print(properties_str)
-
-    sys.exit()
-
-
-    bitrate = g_track.overall_bit_rate if format == 'OPUS' else a_track.bit_rate
-    bitrate = bitrate if bitrate < 1000 else bitrate // 1000
-    samplingrate = a_track.other_sampling_rate[0]
-    channels = a_track.other_channel_s[0]
-    # logger.debug(f"Audio track sampling rate: {samplingrate} and is a {type(samplingrate)}")
-
-    # Format Source string for OPUS, VORBIS
-    if format in ('OPUS', 'VORBIS'):
-        source_str = (f"Source: {format}, {bitrate} Kbps, {samplingrate}" +
-                        f", {channels}")
-    
-    # Format Source string for AAC LC, HE-AAC, MP3
-    if format in ('AAC LC', 'HE-AAC', 'MP3'):
-        bitrate_mode = a_track.bit_rate_mode
-        source_str = (f"Source: {format}, {bitrate} Kbps {bitrate_mode}" +
-                        f", {samplingrate}, {channels}")
-
-    # Format Source string for AIFF, ALAC, FLAC, WAV
-    if format in ('AIFF', 'ALAC', 'FLAC', 'WAV'):
-        bitdepth = a_track.other_bit_depth[0]
-        source_str = (f"Source: {format}, {bitrate} Kbps, {samplingrate}" +
-                        f", {bitdepth}, {channels}")
 
     # Inspect metadata
     logger.debug(f"Opening '{audiofile}' to acquire metadata...")
     try:
-        metadata = taglib.File(str(audiofile))
+        song = taglib.File(str(audiofile))
     except:
         logger.error("Unable to acquire audio metadata.")
         sys.exit()
     logger.debug("Metadata acquired successfully.")
 
+    # Validate metadata field
+    field = metadata.upper()
+    if field == 'GROUPING':
+        field = 'CONTENTGROUP'
+    else:
+        logger.error(f"'{metadata}' is not a valid metadata field.")
+        sys.exit()
+
+    # Update tag
+    # entry = 
 
 
 
