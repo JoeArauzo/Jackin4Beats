@@ -24,7 +24,8 @@ setup(
         packages=['Jackin4Beats'],
         install_requires=['Click','pydub', 'pytaglib', 'Send2Trash', 'sh'],
         entry_points={
-            "console_scripts": ['trim-audiosilence = Jackin4Beats.Jackin4Beats:trim_audiosilence']
+            "console_scripts": ['trim-audiosilence = Jackin4Beats.Jackin4Beats:trim_audiosilence'],
+            "console_scripts": ['write-sourceinfo = Jackin4Beats.Jackin4Beats:write-sourceinfo']
             },
         zip_safe=False
 )

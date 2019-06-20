@@ -4,7 +4,7 @@
 """Jackin4Beats.Jackin4Beats: provides entry point main()."""
 
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 RDNN = 'net.arauzo.utils'
 SUPPORTED_PLATFORMS = ['darwin']
 
@@ -127,11 +127,6 @@ def write_sourceinfo(file, metadata_field, prefix, format, bitrate,
     g_track = None
     a_track = None
     properties = []
-    # supported_fields = {
-    #     'Comment': 'COMMENT',
-    #     'Composer': 'COMPOSER',
-    #     'Grouping': 'CONTENTGROUP'
-    # }
     supported_fields = (
         'COMMENT',
         'COMPOSER',
@@ -169,14 +164,6 @@ def write_sourceinfo(file, metadata_field, prefix, format, bitrate,
               ('bitrate', 'samplingrate', 'channels') )
     )
                                
-    # # Process with media info provided by CLI args
-    # if format:
-    #     #
-    #     print("Format specified")
-    
-    # # Process by parsing audiofile for media info
-    # else:
-    # Parse audiofile for media info
     logger.debug(f"Parsing '{audiofile}'...")
     try:
         info = MediaInfo.parse(audiofile)
