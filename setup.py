@@ -26,7 +26,7 @@ setup(
         entry_points={
             "console_scripts": [
                 'trim-audiosilence = Jackin4Beats.Jackin4Beats:trim_audiosilence',
-                'write-sourceinfo = Jackin4Beats.Jackin4Beats:write-sourceinfo' 
+                'write-sourceinfo = Jackin4Beats.Jackin4Beats:write_sourceinfo' 
             ]
         },
         zip_safe=False
