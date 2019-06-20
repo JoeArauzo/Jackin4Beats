@@ -223,7 +223,6 @@ def write_sourceinfo(file, metadata_field, prefix, format, bitrate,
     properties.append(format)
 
     # Validate params provided
-    # if bitrate or bitrate_mode or samplingrate or bitdepth or channels:
     if any((bitrate, bitrate_mode, samplingrate, bitdepth, channels)):
         logger.debug("At least one audio property was specified at the " +
                      "command-line.  Parameter validation required.")
@@ -254,11 +253,12 @@ def write_sourceinfo(file, metadata_field, prefix, format, bitrate,
         bitrate_str = f"{bitrate} Kbps"
     
     # Bit Rate Mode
-    br_mode = a_track.bit_rate_mode
+    if not bitrate_mode:
+        bitrate_mode = a_track.bit_rate_mode
     if format in fmts_wo_br_mode_displayed:
-        br_mode = None
-    if br_mode:
-        bitrate_str = f"{bitrate_str} {br_mode}"
+        bitrate_mode = None
+    if bitrate_mode:
+        bitrate_str = f"{bitrate_str} {bitrate_mode}"
     properties.append(bitrate_str)
 
     # Sampling Rate
