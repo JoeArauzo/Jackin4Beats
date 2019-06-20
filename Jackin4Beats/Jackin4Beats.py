@@ -68,6 +68,9 @@ def detect_leading_silence(sound, silence_threshold, chunk_size=1):
 @click.option("--bitrate", "-kbps", metavar="<Kbps>", type=int,
               help="Bit Rate of source material, i.e. 1536, 1411.  (default: " +
               "extracted from FILE)")
+@click.option("--bitrate_mode", metavar="<mode>", type=str,
+              help="Bit Rate Mode of source material, i.e. CBR, VBR.  " +
+              "(default: extracted from FILE)")
 @click.option("--samplingrate", "-khz", metavar="<kHz>", type=float,
               help="Sampling Rate of source material, i.e. 44.1, 48.0, " +
               "96.0.  (default: extracted from FILE)")
@@ -83,8 +86,9 @@ def detect_leading_silence(sound, silence_threshold, chunk_size=1):
               help="Verbose output")
 @click.option("--debug", "verbosity", flag_value="debug",
               help="Debug output")
-def write_sourceinfo(file, metadata_field, prefix, format, bitrate, samplingrate, 
-                     bitdepth, channels, test, verbosity):
+def write_sourceinfo(file, metadata_field, prefix, format, bitrate,
+                     bitrate_mode, samplingrate, bitdepth, channels, test,
+                     verbosity):
     """
     This CLI tool writes source material information to the 'Grouping' metadata 
     field of the FILE specificed.  For example 'Source: AIFF, 1536 Kbps,
@@ -123,10 +127,19 @@ def write_sourceinfo(file, metadata_field, prefix, format, bitrate, samplingrate
     g_track = None
     a_track = None
     properties = []
-    supported_fields = {
-        'Comment': 'COMMENT',
-        'Composer': 'COMPOSER',
-        'Grouping': 'CONTENTGROUP'
+    # supported_fields = {
+    #     'Comment': 'COMMENT',
+    #     'Composer': 'COMPOSER',
+    #     'Grouping': 'CONTENTGROUP'
+    # }
+    supported_fields = (
+        'COMMENT',
+        'COMPOSER',
+        'GROUPING'
+    )
+    transform_field_Grouping = {
+        'AIFF': 'CONTENTGROUP',
+        'MP3': 'CONTENTGROUP'
     }
     fmts_wo_br_mode_displayed = (
         'AIFF',
@@ -146,6 +159,14 @@ def write_sourceinfo(file, metadata_field, prefix, format, bitrate, samplingrate
         'OPUS',
         'VORBIS'
         # WAV not supported
+    )
+    required_params = (
+        ( ('AAC LC', 'HE-AAC', 'MP3'),
+              ('bitrate', 'bitrate_mode', 'samplingrate', 'channels') ),
+        ( ('AIFF', 'ALAC', 'FLAC'),
+              ('bitrate', 'samplingrate', 'bitdepth', 'channels') ),
+        ( ('OPUS', 'VORBIS'),
+              ('bitrate', 'samplingrate', 'channels') )
     )
                                
     # # Process with media info provided by CLI args
@@ -185,20 +206,41 @@ def write_sourceinfo(file, metadata_field, prefix, format, bitrate, samplingrate
         logger.error(f"No audio track was detected in '{audiofile}'.")
         sys.exit(4)
     
-    # Format of audio
+    # Exit if actual format of audiofile is unsupported
+    actual_format = g_track.other_file_name[0]
+    logger.debug(f"Actual format of FILE: {actual_format}")
+    if not actual_format in supported_audio_formats:
+        logger.error(f"'{actual_format}' is not a supported audio format.")
+        sys.exit(5)
+    
+    # Format of audio to include in properties string
     if format:
         format = format.upper()
-        logger.debug(f"Format specified at command-line: {format}")
+        logger.debug(f"Using format specified at command-line: {format}")
     else:
-        format = g_track.other_file_name[0]
-        logger.debug(f"Format extracted from FILE: {format}")
-    
-    # Exit if audio format not supported
-    if not format in supported_audio_formats:
-        logger.error(f"'{format}' is not a supported audio format.")
-        sys.exit(5)
+        format = actual_format
+        logger.debug(f"Using actual format of FILE: {format}")
     properties.append(format)
 
+    # Validate params provided
+    # if bitrate or bitrate_mode or samplingrate or bitdepth or channels:
+    if any((bitrate, bitrate_mode, samplingrate, bitdepth, channels)):
+        logger.debug("At least one audio property was specified at the " +
+                     "command-line.  Parameter validation required.")
+        for formats, params in required_params:
+            if format in formats:
+                params_list = list(map(eval, params))
+                if None in params_list:
+                    logger.error("When specifying audio properties for the " +
+                                 f"'{format}' format, all of the following " +
+                                 " properties must be included: " +
+                                 f"{', '.join(map(str, params))}")
+                    sys.exit()
+    else:
+        logger.debug("No audio properties were specified at the " +
+                     "command-line.  No parameter validation required.")
+        
+    
     # Bit Rate in Kbps
     if bitrate:
         bitrate_str = f"{bitrate} Kbps"
@@ -253,14 +295,21 @@ def write_sourceinfo(file, metadata_field, prefix, format, bitrate, samplingrate
     logger.debug("Metadata inspected successfully.")
 
     # Validate metadata field
-    metadata_field = metadata_field.capitalize()
-    if not metadata_field in supported_fields:
-        logger.error(f"'{metadata_field}' is not a supported filed to write " +
-        "to.  The supported fields are: " +
-        f"{', '.join(map(str, supported_fields.keys()))}")
+    # metadata_field = metadata_field.upper()
+    field = metadata_field.upper()
+    if not field in supported_fields:
+        logger.error(f"'{metadata_field}' is not a supported " +
+        "field to write to.  The supported fields are: " +
+        f"{', '.join(map(str, supported_fields))}")
+    
+    # Transform metadata field if necessary
+    if ( (field == 'GROUPING') and 
+        (actual_format in transform_field_Grouping) ):
+        field = transform_field_Grouping[actual_format]
 
-    # Write source info to metadata filed
-    song.tags[supported_fields[metadata_field]] = [properties_str]
+    # Write source info to metadata field
+    # field = supported_fields[metadata_field]
+    song.tags[field] = [properties_str]
     logger.debug("Attempting to update metadata with source info...")
     try:
         song.save()
