@@ -22,7 +22,14 @@ setup(
         author_email='joe@arauzo.net',
         license='GPLv3+',
         packages=['Jackin4Beats'],
-        install_requires=['Click','pydub', 'pytaglib', 'Send2Trash', 'sh'],
+        install_requires=[
+            'Click',
+            'pydub',
+            'pytaglib',
+            'Send2Trash',
+            'sh',
+            'pymediainfo'
+        ],
         entry_points={
             "console_scripts": [
                 'trim-audiosilence = Jackin4Beats.Jackin4Beats:trim_audiosilence',
