@@ -190,7 +190,9 @@ def write_sourceinfo(file, metadata_field, prefix, format, bitrate,
             break
     if verbosity == 'debug':
         info_json = info.to_json()
-        logger.debug(info_json)
+        import json
+        parsed = json.loads(info_json)
+        logger.debug(json.dumps(parsed, indent=4, sort_keys=True))
     
     # Exit if no audio track detected
     if not a_track:
@@ -198,7 +200,16 @@ def write_sourceinfo(file, metadata_field, prefix, format, bitrate,
         sys.exit(4)
     
     # Exit if actual format of audiofile is unsupported
-    actual_format = g_track.other_file_name[0]
+    actual_format = a_track.commercial_name
+    if actual_format == 'AAC':
+        actual_format = a_track.other_format[0]
+    if actual_format == 'PCM':
+        actual_format = g_track.format
+        if actual_format == 'Wave':
+            actual_format = 'WAV'
+    if actual_format == 'MPEG Audio' and a_track.format_profile == 'Layer 3':
+        actual_format = 'MP3'
+    actual_format = actual_format.upper()
     logger.debug(f"Actual format of FILE: {actual_format}")
     if not actual_format in supported_audio_formats:
         logger.error(f"'{actual_format}' is not a supported audio format.")
