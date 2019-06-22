@@ -99,3 +99,22 @@ def pathwoconflict(filepath):
         c += 1
     
     return filepath
+
+
+def safe_filename(filename):
+    """Replaces illegal/unsafe characters in a filename."""
+    char_replacement_map = {
+        '"': '\'',
+        '*': '',
+        '.': '',
+        '/': '-',
+        '\\': '-',
+        ':': '-',
+        '<': '-',
+        '>': '-',
+        '?': '',
+        '|': '-',
+    }
+    for char, replacement in char_replacement_map.items():
+        filename = filename.replace(char, replacement)
+    return filename
