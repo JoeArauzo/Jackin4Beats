@@ -164,6 +164,7 @@ def write_sourceinfo(file, metadata_field, prefix, format, bitrate,
               ('bitrate', 'samplingrate', 'channels') )
     )
                                
+    # Parse FILE for media info
     logger.debug(f"Parsing '{audiofile}'...")
     try:
         info = MediaInfo.parse(audiofile)
@@ -176,7 +177,7 @@ def write_sourceinfo(file, metadata_field, prefix, format, bitrate,
                         f"while attempting to parse '{audiofile}'.")
         sys.exit(3)
     except:
-        logger.error("An unknown error occurred while attemptint to " +
+        logger.error("An unknown error occurred while attempting to " +
                         f"parse '{audiofile}'.")
         sys.exit(3)
     for t in info.tracks:
@@ -187,6 +188,9 @@ def write_sourceinfo(file, metadata_field, prefix, format, bitrate,
             a_track = t
             logger.debug("Found first Audio track.")
             break
+    if verbosity == 'debug':
+        info_json = info.to_json()
+        logger.debug(info_json)
     
     # Exit if no audio track detected
     if not a_track:
