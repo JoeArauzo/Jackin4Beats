@@ -141,8 +141,8 @@ def write_sourceinfo(file, metadata_field, prefix, format, bitrate,
         'ALAC',
         'FLAC',
         'OPUS',
-        'VORBIS',
-        'WAV'
+        'VORBIS'
+        # 'WAV' not supported
     )
     supported_audio_formats = (
         'AAC LC',
@@ -153,7 +153,7 @@ def write_sourceinfo(file, metadata_field, prefix, format, bitrate,
         'MP3',
         'OPUS',
         'VORBIS'
-        # WAV not supported
+        # 'WAV' not supported
     )
     required_params = (
         ( ('AAC LC', 'HE-AAC', 'MP3'),
@@ -310,7 +310,6 @@ def write_sourceinfo(file, metadata_field, prefix, format, bitrate,
         field = transform_field_Grouping[actual_format]
 
     # Write source info to metadata field
-    # field = supported_fields[metadata_field]
     song.tags[field] = [properties_str]
     logger.debug("Attempting to update metadata with source info...")
     try:
