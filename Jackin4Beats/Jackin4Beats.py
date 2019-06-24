@@ -370,9 +370,7 @@ def trim_audiosilence(file, verbosity, namefromtag, test, end_offset, begin_offs
     
     # Dependency checking
     dependencies = {
-        'KID3-CLI': 'kid3-cli',
-        'FFMPEG': 'ffmpeg',
-        'TAGLIB': 'taglib-config'
+        'FFMPEG': 'ffmpeg'
     }
     for dependency, file in dependencies.items():
         if not shutil.which(file):
@@ -381,26 +379,11 @@ def trim_audiosilence(file, verbosity, namefromtag, test, end_offset, begin_offs
             sys.exit(2)
 
     # Initialize variables
-    import taglib
-    kid3_cli = sh.Command("kid3-cli")
     start_time = datetime.now()
     tmp_name = f"{start_time:%Y%m%dT%H%M%S%f}"
-    audiofile_ext = audiofile.suffix.lower()[1:]
-    # supported_extensions = ('aiff', 'aif')
     supported_audio_formats = ('AIFF')
     tmp_audiofile = tmp_name + audiofile.suffix
     tmp_audiofile = audiofile.parent / tmp_audiofile
-    tmp_artfile = tmp_name + '.jpg'
-    tmp_artfile = audiofile.parent / tmp_artfile
-    tmp_audiofile1 = audiofile.parent / tmp_name / audiofile.name
-    tmp_audiofile2 = tmp_name + audiofile.suffix
-    tmp_audiofile2 = audiofile.parent / tmp_name / tmp_audiofile2
-
-    # # Check if file type is supported by this script
-    # if not (audiofile_ext in supported_extensions):
-    #     logger.error(f"'{audiofile_ext.upper()}' is not a file type " +
-    #                  "supported by this tool.  'AIFF' is supported.")
-    #     sys.exit(4)
 
     # Check if file type is supported
     logger.debug(f"Inspecting '{audiofile}'...")
@@ -421,7 +404,6 @@ def trim_audiosilence(file, verbosity, namefromtag, test, end_offset, begin_offs
     else:
         logger.error("Unable to determine audio type.")
         sys.exit(4)
-
 
     # Obtain audio segment from file
     logger.debug(f"Opening '{audiofile}' for audio analysis...")
@@ -468,7 +450,8 @@ def trim_audiosilence(file, verbosity, namefromtag, test, end_offset, begin_offs
                 if end_trim > 0:
                     # If negative offset specified
                     if end_offset < 0:
-                        if begin_offset < (duration_ms - (start_trim + end_trim + abs(end_offset))):
+                        if begin_offset < (duration_ms - (start_trim + 
+                                end_trim + abs(end_offset))):
                             start_trim += begin_offset
                 else:
                     start_trim += begin_offset
@@ -501,109 +484,6 @@ def trim_audiosilence(file, verbosity, namefromtag, test, end_offset, begin_offs
                 f"{str(timedelta(milliseconds=len(trimmed_sound)))[:-3]}")
         # Perform trim process if test flag not set
         if not test:
-            # # Copy file to temp working directory
-            # logger.debug("Creating temp working directory at " +
-            #                 f"'{tmp_audiofile1.parent}'...")
-            # try:
-            #     tmp_audiofile1.parent.mkdir(parents=True)
-            # except:
-            #     logger.error("Unable to create temp working directory.")
-            #     sys.exit()
-            # logger.debug("Temp working directory created successfully.")
-            # logger.debug("Copying file to temp working directory...")
-            # try:
-            #     shutil.copy2(audiofile, tmp_audiofile1.parent)
-            # except IOError as e:
-            #     logger.error(f"Unable to copy file. {e}")
-            #     sys.exit()
-            # logger.debug("Copy successful.")
-            
-            # # Inspect metadata
-            # logger.debug(f"Opening '{tmp_audiofile1}' to acquire metadata...")
-            # try:
-            #     metadata = taglib.File(str(tmp_audiofile1))
-            # except:
-            #     logger.error("Unable to acquire audio metadata.")
-            #     sys.exit()
-            # logger.debug("Metadata acquired successfully.")
-
-            # # Inspect metadata
-            # logger.debug(f"Opening '{audiofile}' to acquire metadata...")
-            # try:
-            #     source = taglib.File(str(audiofile))
-            # except:
-            #     logger.error("Unable to acquire audio metadata.")
-            #     sys.exit()
-            # logger.debug("Metadata acquired successfully.")
-            
-            # Backup ID3 tags if detected
-            # if len(source.tags):
-
-                # # Set ID3 TRACKNUMBER to 1 if value is null
-                # if ( (not 'TRACKNUMBER' in metadata.tags) or
-                #         (not len(metadata.tags["TRACKNUMBER"])) ):
-                #     metadata.tags["TRACKNUMBER"] = ["1"]
-                #     logger.debug("ID3 TRACKNUMBER missing.  Setting to value " +
-                #                  "'1'...")
-                #     try:
-                #         metadata.save()
-                #     except:
-                #         logger.error("Unable to set ID3 TRACKNUMBER.")
-                #         sys.exit()
-                #     logger.debug("Value set successfully.")
-
-                # # Clear value for ENODEDBY
-                # logger.debug("Clearing value of ENCODEDBY...")
-                # kid3_cmd = "set encoded-by '' 2"
-                # try:
-                #     kid3_cli("-c", kid3_cmd, "-c", "save", tmp_audiofile1)
-                # except sh.ErrorReturnCode as e:
-                #     logger.debug(f"RAN: {e.full_cmd}")
-                #     logger.debug(f"STDOUT: {e.stdout}")
-                #     logger.debug(f"STDERR: {e.stderr}")
-                #     logger.error("Unable to clear value of ENCODEDBY.")
-                #     sys.exit()
-                # logger.debug("Value cleared successfully.")
-
-                # # Clear value for ENODEDBY
-                # if "TENC" in source.tags:
-                #     logger.debug("Clearing value of ENCODEDBY.")
-                #     del source.tags["TENC"]   
-                
-                # # Backup metadata
-                # metadata_bak = "metadata.csv"
-                # metadata_bak = tmp_audiofile1.parent / metadata_bak
-                # logger.debug(f"Exporting metadata to '{metadata_bak}'...")
-                # kid3_cmd = f"export '{metadata_bak}' 'CSV unquoted' 2"
-                # try:
-                #     kid3_cli("-c", kid3_cmd, tmp_audiofile1)
-                # except sh.ErrorReturnCode as e:
-                #     logger.debug(f"RAN: {e.full_cmd}")
-                #     logger.debug(f"STDOUT: {e.stdout}")
-                #     logger.debug(f"STDERR: {e.stderr}")
-                #     logger.error("Unable to export tags.")
-                #     sys.exit()
-                # logger.debug("Export successful.")
-                
-                # # Export album artwork
-                # logger.debug(f"Exporting album artwork to '{tmp_artfile}'...")
-                # kid3_cmd = f"get picture:'{tmp_artfile}'"
-                # kid3_cmd = f"get picture:'/Users/jarauzo/Music/Audio Hijack/artwork.jpg'"
-                # logger.debug(kid3_cmd)
-                # try:
-                #     kid3_cli("-c", kid3_cmd, tmp_audiofile)
-                # except sh.ErrorReturnCode as e:
-                #     logger.debug(f"RAN: {e.full_cmd}")
-                #     logger.debug(f"STDOUT: {e.stdout}")
-                #     logger.debug(f"STDERR: {e.stderr}")
-                #     logger.error("Unable to export album artwork.")
-                #     sys.exit()
-                # logger.debug("Export successful.")
-
-                # sys.exit()
-
-            # Save trimmed audio file
-            # os.remove(tmp_audiofile1)
             logger.debug(f"Saving trimmed audio file as '{tmp_audiofile}'...")
             try:
                 trimmed_sound.export(tmp_audiofile, format='aiff')
@@ -619,36 +499,15 @@ def trim_audiosilence(file, verbosity, namefromtag, test, end_offset, begin_offs
                     logger.debug("Clearing value of ENCODEDBY.")
                     del source.tags["TENC"]  
                 logger.debug(f"Restoring metadata...")
-                # kid3_cmd = f"import '{metadata_bak}' 'CSV unquoted' 2"
                 target = mutagen.File(str(tmp_audiofile))
                 target.tags = source.tags
                 try:
-                    # kid3_cli("-c", kid3_cmd, "-c", "save", tmp_audiofile1)
                     target.save()
-                # except sh.ErrorReturnCode as e:
-                #     logger.debug(f"RAN: {e.full_cmd}")
-                #     logger.debug(f"STDOUT: {e.stdout}")
-                #     logger.debug(f"STDERR: {e.stderr}")
-                #     logger.error("Unable to restore metadata.")
                 except:
                     logger.error("Unable to restore metadata.")
                     sys.exit()
                 logger.debug("Restore successful.")
 
-                # # Restore album artwork
-                # logger.debug(f"Restoring album artwork...")
-                # kid3_cmd = f"set picture:'{tmp_artfile}' 2"
-                # try:
-                #     kid3_cli("-c", kid3_cmd, "-c", "save", tmp_audiofile)
-                # except sh.ErrorReturnCode as e:
-                #     logger.debug(f"RAN: {e.full_cmd}")
-                #     logger.debug(f"STDOUT: {e.stdout}")
-                #     logger.debug(f"STDERR: {e.stderr}")
-                #     logger.error("Unable to restore album artwork.")
-                #     sys.exit()
-                # logger.debug("Restore successful.")
-                # os.remove(tmp_artfile)
-            
             # Send original file to trash
             try:
                 send2trash(str(audiofile))
@@ -666,28 +525,20 @@ def trim_audiosilence(file, verbosity, namefromtag, test, end_offset, begin_offs
                 sys.exit(8)
             logger.debug("Successfuly renamed temp file as original file.")
 
-            # # Delete temp working directory
-            # logger.debug("Deleting temp working directory...")
-            # try:
-            #     shutil.rmtree(tmp_audiofile1.parent)
-            # except IOError as e:
-            #     logger.error(f"Unable to delete temp working directory. {e}")
-            #     sys.exit()
-            # logger.debug("Delete successful.")
-
-            if len(source.tags) and namefromtag: 
-                # Rename trimmed file from tags
-                logger.debug("Renaming trimmed file as {artist} - {title}...")
-                kid3_cmd = "fromtag '%{artist} - %{title}' 2"
-                try:
-                    kid3_cli("-c", kid3_cmd, audiofile)
-                except sh.ErrorReturnCode as e:
-                    logger.debug(f"RAN: {e.full_cmd}")
-                    logger.debug(f"STDOUT: {e.stdout}")
-                    logger.debug(f"STDERR: {e.stderr}")
-                    logger.error("Unable to rename trimmed file.")
-                    sys.exit()
-                logger.debug("Rename successful.")
+            # # Rename file per preference
+            # if len(source.tags) and namefromtag: 
+            #     # Rename trimmed file from tags
+            #     logger.debug("Renaming trimmed file as {artist} - {title}...")
+            #     kid3_cmd = "fromtag '%{artist} - %{title}' 2"
+            #     try:
+            #         kid3_cli("-c", kid3_cmd, audiofile)
+            #     except sh.ErrorReturnCode as e:
+            #         logger.debug(f"RAN: {e.full_cmd}")
+            #         logger.debug(f"STDOUT: {e.stdout}")
+            #         logger.debug(f"STDERR: {e.stderr}")
+            #         logger.error("Unable to rename trimmed file.")
+            #         sys.exit()
+            #     logger.debug("Rename successful.")
 
             logger.info("File successfully trimmed.")
         
