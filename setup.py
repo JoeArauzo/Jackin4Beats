@@ -28,7 +28,8 @@ setup(
             'pytaglib',
             'Send2Trash',
             'sh',
-            'pymediainfo'
+            'pymediainfo',
+            'mutagen'
         ],
         entry_points={
             "console_scripts": [
